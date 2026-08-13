@@ -51,7 +51,7 @@ export default function Home() {
                   filter: 'drop-shadow(0 1px 3px rgba(180,130,40,0.5))',
                 }}
               >
-                90S GAANA
+                90SGAANA
               </h1>
 
               {/* Right ornament — triple lines */}
