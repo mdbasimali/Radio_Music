@@ -24,14 +24,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* 90s Logo — unchanged */}
-          <img
-            src="/logo.png"
-            alt="90s Radio"
-            className="h-14 w-auto object-contain"
-            style={{ mixBlendMode: 'screen', filter: 'drop-shadow(0 0 8px rgba(212,140,54,0.4))' }}
-            draggable={false}
-          />
+
 
           {/* ── 90SGAANA Wordmark — styled to reference ── */}
           <div className="flex flex-col gap-0.5 mt-0.5">
