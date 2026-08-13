@@ -299,6 +299,7 @@ router.delete('/:id', async (req, res) => {
 
     // Retrieve all tracks linked to this playlist
     const tracksToCleanup = await Track.find({ playlistId: playlistId });
+    const deletedTrackIds = [];
 
     for (const track of tracksToCleanup) {
       // Shared-track protection: check if another playlist matches this track (e.g. same providerId/station combination)
@@ -308,6 +309,13 @@ router.delete('/:id', async (req, res) => {
       // If a track's playlistId matches the deleted one, it belongs exclusively to this playlist.
       // Delete the track completely.
       await Track.deleteOne({ _id: track._id });
+      deletedTrackIds.push(track._id.toString());
+    }
+
+    // Broadcast tracks invalidation real-time event to all connected clients
+    const io = req.app.get('io');
+    if (io && deletedTrackIds.length > 0) {
+      io.emit('tracks_invalidated', { deletedTrackIds });
     }
 
     res.json({ message: 'Playlist deleted successfully and orphaned tracks removed' });

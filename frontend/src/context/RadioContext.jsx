@@ -277,6 +277,41 @@ function radioReducer(state, action) {
         ambientEnabled: updatedEnabled,
       };
     }
+    case 'INVALIDATE_TRACKS': {
+      const invalidIds = action.payload || [];
+      const filteredQueue = state.queue.filter((item) => !invalidIds.includes(item.id));
+      
+      let newIdx = state.currentTrackIndex;
+      const currentTrack = state.queue[state.currentTrackIndex] || null;
+      let shouldStopAndAdvance = false;
+
+      if (currentTrack && invalidIds.includes(currentTrack.id)) {
+        shouldStopAndAdvance = true;
+      }
+
+      // Adjust index
+      if (newIdx >= filteredQueue.length && filteredQueue.length > 0) {
+        newIdx = filteredQueue.length - 1;
+      }
+
+      // If playing the deleted track, stop and load next
+      if (shouldStopAndAdvance) {
+        // Reset track index or advance
+        return {
+          ...state,
+          queue: filteredQueue,
+          currentTrackIndex: filteredQueue.length > 0 ? newIdx % filteredQueue.length : 0,
+          currentTime: 0,
+          isPlaying: filteredQueue.length > 0, // Keep playing if we have other songs
+        };
+      }
+
+      return {
+        ...state,
+        queue: filteredQueue,
+        currentTrackIndex: newIdx,
+      };
+    }
     default:
       return state;
   }
@@ -342,6 +377,8 @@ export function RadioProvider({ children }) {
     dispatch({ type: 'SET_STATION_ONLY', payload: station });
   }, []);
 
+  const invalidateTracks = useCallback((ids) => dispatch({ type: 'INVALIDATE_TRACKS', payload: ids }), []);
+
   const currentTrack = state.queue[state.currentTrackIndex] || null;
 
   return (
@@ -365,6 +402,7 @@ export function RadioProvider({ children }) {
         markTrackFailed,
         setAmbientVolume,
         toggleAmbient,
+        invalidateTracks,
       }}
     >
       {children}

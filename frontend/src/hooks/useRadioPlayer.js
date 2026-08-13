@@ -1,5 +1,6 @@
 // src/hooks/useRadioPlayer.js
 import { useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { useRadio } from '../context/RadioContext';
 import * as audioEngine from '../services/audioEngine';
 import { playbackManager } from '../services/playbackManager';
@@ -25,6 +26,7 @@ export function useRadioPlayer() {
     setLoading,
     nextTrack,
     markTrackFailed,
+    invalidateTracks,
   } = useRadio();
 
   const lastLoadedTrackIdRef = useRef(null);
@@ -57,6 +59,28 @@ export function useRadioPlayer() {
       setDuration,
     };
   }, [currentTrack, isPlaying, volume, isMuted, nextTrack, markTrackFailed, setPlaying, setLoading, setCurrentTime, setDuration]);
+
+  // Setup socket connection for real-time playlist invalidation updates
+  useEffect(() => {
+    const backendHost = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace('/api', '')
+      : 'http://localhost:5001';
+
+    const socket = io(backendHost, {
+      query: { visitorId: localStorage.getItem('radio_visitorId') || 'anonymous' }
+    });
+
+    socket.on('tracks_invalidated', ({ deletedTrackIds }) => {
+      console.log('[Socket] Received tracks_invalidated event:', deletedTrackIds);
+      if (deletedTrackIds && deletedTrackIds.length > 0) {
+        invalidateTracks(deletedTrackIds);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [invalidateTracks]);
 
   // Audio event listeners setup
   useEffect(() => {

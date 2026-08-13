@@ -16,6 +16,18 @@ const playlistsRouter = require('./routes/playlists');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Setup HTTP server and Socket.IO
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+app.set('io', io);
+
 // Define allowed CORS origins
 const allowedOrigins = [];
 if (process.env.FRONTEND_URL) {
@@ -71,15 +83,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Setup HTTP server and Socket.IO
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST'],
-    credentials: true
-  }
-});
+
 
 // Socket.IO state management
 // visitorSockets: visitorId -> Set of socketIds
