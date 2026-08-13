@@ -39,10 +39,12 @@ export default function Home() {
 
               {/* 90S GAANA */}
               <h1
-                className="font-display font-bold leading-none whitespace-nowrap"
+                className="font-display font-bold whitespace-nowrap"
                 style={{
                   fontSize: 'clamp(14px, 2.5vw, 21px)',
                   letterSpacing: '0.12em',
+                  lineHeight: '1.2',
+                  verticalAlign: 'baseline',
                   background: 'linear-gradient(180deg, #f5e4a3 0%, #c9a84c 45%, #a87c2a 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
