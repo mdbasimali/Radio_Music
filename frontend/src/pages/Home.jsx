@@ -26,14 +26,60 @@ export default function Home() {
         >
 
 
-          {/* 90SGAANA Deployed Logo Image */}
-          <img
-            src="/90sgaana-logo.png"
-            alt="90SGAANA"
-            className="h-10 w-auto object-contain"
-            style={{ filter: 'drop-shadow(0 0 6px rgba(201,168,76,0.2))' }}
-            draggable={false}
-          />
+          {/* ── 90S GAANA Wordmark — Premium CSS Serif Typography ── */}
+          <div className="flex flex-col gap-0.5 mt-0.5 select-none">
+            {/* Main title row with triple-line ornaments */}
+            <div className="flex items-center gap-2">
+              {/* Left ornament — triple lines */}
+              <div className="flex flex-col gap-[2px] opacity-70">
+                <div style={{ width: 14, height: 1, background: 'linear-gradient(to right, transparent, #c9a84c)' }} />
+                <div style={{ width: 14, height: 1, background: 'linear-gradient(to right, transparent, #c9a84c)' }} />
+                <div style={{ width: 14, height: 1, background: 'linear-gradient(to right, transparent, #c9a84c)' }} />
+              </div>
+
+              {/* 90S GAANA */}
+              <h1
+                className="font-display font-bold leading-none whitespace-nowrap"
+                style={{
+                  fontSize: 'clamp(14px, 2.5vw, 21px)',
+                  letterSpacing: '0.12em',
+                  background: 'linear-gradient(180deg, #f5e4a3 0%, #c9a84c 45%, #a87c2a 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))',
+                }}
+              >
+                90S GAANA
+              </h1>
+
+              {/* Right ornament — triple lines */}
+              <div className="flex flex-col gap-[2px] opacity-70">
+                <div style={{ width: 14, height: 1, background: 'linear-gradient(to left, transparent, #c9a84c)' }} />
+                <div style={{ width: 14, height: 1, background: 'linear-gradient(to left, transparent, #c9a84c)' }} />
+                <div style={{ width: 14, height: 1, background: 'linear-gradient(to left, transparent, #c9a84c)' }} />
+              </div>
+            </div>
+
+            {/* Subtitle row: — NOSTALGIA ON AIR • — */}
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <div style={{ flex: 1, height: '0.5px', background: 'linear-gradient(to right, transparent, #c9a84c66)' }} />
+              <span
+                className="uppercase font-body font-medium whitespace-nowrap"
+                style={{
+                  fontSize: 'clamp(7px, 1.1vw, 9px)',
+                  letterSpacing: '0.35em',
+                  color: '#c9a84c',
+                  opacity: 0.85,
+                }}
+              >
+                Nostalgia on Air
+              </span>
+              <span style={{ width: 3.5, height: 3.5, borderRadius: '50%', background: '#c9a84c', opacity: 0.9, flexShrink: 0 }} />
+              <div style={{ flex: 1, height: '0.5px', background: 'linear-gradient(to left, transparent, #c9a84c66)' }} />
+            </div>
+          </div>
+
 
 
 
