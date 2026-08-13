@@ -1,6 +1,120 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { ListMusic, Plus, FolderOpen, RefreshCw, X, MoreVertical, RefreshCcw, Edit, Power, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
+
+// Portal-based anchored action menu component
+function PlaylistActionMenuPortal({ triggerId, onClose, onSync, onToggleStatus, onDelete, status }) {
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const menuRef = useRef(null);
+
+  const updatePosition = () => {
+    const trigger = document.getElementById(triggerId);
+    if (!trigger) {
+      onClose();
+      return;
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    const menuWidth = 176; // w-44 is 11rem -> 176px
+    const menuHeight = 110; // approximate menu height
+    
+    let top = rect.bottom + window.scrollY;
+    let left = rect.right + window.scrollX - menuWidth;
+
+    // Boundary check below
+    if (rect.bottom + menuHeight > window.innerHeight) {
+      top = rect.top + window.scrollY - menuHeight - 4; // open above
+    } else {
+      top = rect.bottom + window.scrollY + 4; // open below
+    }
+
+    // Boundary check right/left
+    if (left < 10) {
+      left = 10;
+    } else if (left + menuWidth > window.innerWidth - 10) {
+      left = window.innerWidth - menuWidth - 10;
+    }
+
+    setCoords({ top, left });
+  };
+
+  useEffect(() => {
+    updatePosition();
+    
+    // Recalculate on scroll or window resize
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+
+    // Close on outside click
+    const handleOutsideClick = (e) => {
+      const trigger = document.getElementById(triggerId);
+      if (
+        menuRef.current && !menuRef.current.contains(e.target) &&
+        trigger && !trigger.contains(e.target)
+      ) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+
+    // Close on Escape press
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [triggerId, onClose]);
+
+  return ReactDOM.createPortal(
+    <div
+      ref={menuRef}
+      style={{
+        position: 'absolute',
+        top: `${coords.top}px`,
+        left: `${coords.left}px`,
+      }}
+      className="w-44 rounded-lg bg-surface-900 border border-surface-800/80 shadow-lg py-1 z-50"
+    >
+      <button
+        onClick={() => {
+          onSync();
+          onClose();
+        }}
+        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-surface-300 hover:bg-surface-800 hover:text-surface-100"
+      >
+        <RefreshCcw size={14} /> Sync Playlist
+      </button>
+      <button
+        onClick={() => {
+          onToggleStatus();
+          onClose();
+        }}
+        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-surface-300 hover:bg-surface-800 hover:text-surface-100"
+      >
+        <Power size={14} /> {status === 'active' ? 'Disable' : 'Enable'}
+      </button>
+      <button
+        onClick={() => {
+          onDelete();
+          onClose();
+        }}
+        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-surface-800 hover:text-red-300"
+      >
+        <Trash2 size={14} /> Delete
+      </button>
+    </div>,
+    document.body
+  );
+}
 
 export default function Playlists() {
   const [playlists, setPlaylists] = useState([]);
@@ -276,7 +390,15 @@ export default function Playlists() {
                     </td>
                     <td className="px-5 py-4 relative">
                       <button 
-                        onClick={() => setActiveMenuId(activeMenuId === playlist._id ? null : playlist._id)}
+                        id={`action-trigger-${playlist._id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activeMenuId === playlist._id) {
+                            setActiveMenuId(null);
+                          } else {
+                            setActiveMenuId(playlist._id);
+                          }
+                        }}
                         className="p-1.5 rounded-lg text-surface-650 hover:text-surface-300 hover:bg-surface-800 transition-colors"
                         disabled={syncingPlaylistId !== null}
                       >
@@ -284,26 +406,14 @@ export default function Playlists() {
                       </button>
 
                       {activeMenuId === playlist._id && (
-                        <div className="absolute right-0 mt-1 w-44 rounded-lg bg-surface-900 border border-surface-800/80 shadow-lg py-1 z-10">
-                          <button
-                            onClick={() => handleSyncPlaylist(playlist)}
-                            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-surface-300 hover:bg-surface-800 hover:text-surface-100"
-                          >
-                            <RefreshCcw size={14} /> Sync Playlist
-                          </button>
-                          <button
-                            onClick={() => handleToggleStatus(playlist)}
-                            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-surface-300 hover:bg-surface-800 hover:text-surface-100"
-                          >
-                            <Power size={14} /> {playlist.status === 'active' ? 'Disable' : 'Enable'}
-                          </button>
-                          <button
-                            onClick={() => handleDeletePlaylist(playlist)}
-                            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-surface-800 hover:text-red-300"
-                          >
-                            <Trash2 size={14} /> Delete
-                          </button>
-                        </div>
+                        <PlaylistActionMenuPortal
+                          triggerId={`action-trigger-${playlist._id}`}
+                          onClose={() => setActiveMenuId(null)}
+                          onSync={() => handleSyncPlaylist(playlist)}
+                          onToggleStatus={() => handleToggleStatus(playlist)}
+                          onDelete={() => handleDeletePlaylist(playlist)}
+                          status={playlist.status}
+                        />
                       )}
                     </td>
                   </tr>
