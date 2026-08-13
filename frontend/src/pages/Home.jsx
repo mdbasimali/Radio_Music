@@ -24,13 +24,15 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="font-display text-lg font-bold tracking-[0.25em] text-paper">
-            ৯০s RADIO
-          </h1>
-          <span className="text-[8px] font-body uppercase tracking-[0.3em] text-[#d48c36]/80 font-medium">
-            Nostalgia on Air
-          </span>
-          <div className="flex items-center gap-2 mt-1.5">
+          {/* 90s Logo */}
+          <img
+            src="/logo.png"
+            alt="90s Radio"
+            className="h-14 w-auto object-contain"
+            style={{ mixBlendMode: 'screen', filter: 'drop-shadow(0 0 8px rgba(212,140,54,0.4))' }}
+            draggable={false}
+          />
+          <div className="flex items-center gap-2 mt-1">
             <span className={`w-2.5 h-2.5 rounded-full ${isConnected && listenerCount !== null ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
             <span className="text-[11px] font-mono tracking-wider uppercase text-paper-muted/80 font-medium">
               {isConnected && listenerCount !== null ? `${listenerCount} listening` : 'Listening count unavailable'}
