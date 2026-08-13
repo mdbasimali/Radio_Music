@@ -36,6 +36,8 @@ if (allowedOrigins.length === 0) {
   );
 }
 
+console.log('Allowed CORS Origins:', allowedOrigins);
+
 // Middleware
 app.use(cors({
   origin: function (origin, callback) {
