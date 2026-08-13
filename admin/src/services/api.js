@@ -9,7 +9,10 @@ async function request(url, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${BASE_URL}${url}`, {
+  const targetUrl = `${BASE_URL}${url}`;
+  console.log(`[API Request] ${options.method || 'GET'} -> ${targetUrl}`);
+
+  const response = await fetch(targetUrl, {
     ...options,
     headers,
   });
