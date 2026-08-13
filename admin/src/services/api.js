@@ -1,7 +1,10 @@
-// src/services/api.js
-// Admin API service for backend integration
+// IMPORTANT: VITE_API_URL must be set in Vercel Environment Variables
+// For local dev, set it in .env.local
+// For production, it is set in .env.production as well as Vercel env vars
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://radio-music-hrmt.onrender.com/api';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5001/api';
+// Safe diagnostic — never logs secrets
+console.log('[Admin API] BASE_URL resolved to:', BASE_URL);
 
 async function request(url, options = {}) {
   const headers = {
@@ -10,7 +13,7 @@ async function request(url, options = {}) {
   };
 
   const targetUrl = `${BASE_URL}${url}`;
-  console.log(`[API Request] ${options.method || 'GET'} -> ${targetUrl}`);
+
 
   const response = await fetch(targetUrl, {
     ...options,
