@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { ListMusic, Plus, FolderOpen, RefreshCw, X, MoreVertical, RefreshCcw, Edit, Power, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
+import { ConfirmModal, toast } from '../components/dialogs';
 
 // Portal-based anchored action menu component
 function PlaylistActionMenuPortal({ triggerId, onClose, onSync, onToggleStatus, onDelete, status }) {
@@ -136,6 +137,15 @@ export default function Playlists() {
   // Menu action state
   const [activeMenuId, setActiveMenuId] = useState(null);
 
+  // Custom Confirmation Modal State
+  const [confirmModalConfig, setConfirmModalConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    deleteCount: 0,
+    onConfirm: () => {}
+  });
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -198,6 +208,7 @@ export default function Playlists() {
 
       setPlaylists([...playlists, newPlaylist]);
       setModalOpen(false);
+      toast.success(`Successfully imported "${newPlaylist.name}".`);
     } catch (err) {
       setFormError(err.message || 'Import failed.');
     } finally {
@@ -220,8 +231,9 @@ export default function Playlists() {
         playlistName: result.name,
         ...result.lastSyncStats
       });
+      toast.success(`Successfully synced "${result.name}".`);
     } catch (err) {
-      alert(`Sync failed: ${err.message}`);
+      toast.error(`Sync failed: ${err.message}`);
     } finally {
       setSyncingPlaylistId(null);
     }
@@ -234,22 +246,30 @@ export default function Playlists() {
       });
       setPlaylists(playlists.map(p => p._id === playlist._id ? { ...p, status: updated.status } : p));
       setActiveMenuId(null);
+      toast.success(`Successfully updated status for "${playlist.name}" to ${updated.status}.`);
     } catch (err) {
-      alert(`Failed to update status: ${err.message}`);
+      toast.error(`Failed to update status: ${err.message}`);
     }
   };
 
-  const handleDeletePlaylist = async (playlist) => {
-    if (!window.confirm(`Are you sure you want to delete this playlist?`)) {
-      return;
-    }
-    try {
-      await api.deletePlaylist(playlist._id);
-      setPlaylists(playlists.filter(p => p._id !== playlist._id));
-      setActiveMenuId(null);
-    } catch (err) {
-      alert(`Deletion failed: ${err.message}`);
-    }
+  const handleDeletePlaylist = (playlist) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Playlist?',
+      message: `Are you sure you want to delete the playlist "${playlist.name}"? This action cannot be undone and will delete all orphaned tracks.`,
+      deleteCount: 1,
+      onConfirm: async () => {
+        try {
+          await api.deletePlaylist(playlist._id);
+          setPlaylists(playlists.filter(p => p._id !== playlist._id));
+          setActiveMenuId(null);
+          setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+          toast.success(`Successfully deleted "${playlist.name}".`);
+        } catch (err) {
+          toast.error(`Deletion failed: ${err.message}`);
+        }
+      }
+    });
   };
 
   const getStationName = (stationId) => {
@@ -498,6 +518,15 @@ export default function Playlists() {
           </div>
         </div>
       )}
+      {/* Custom Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModalConfig.isOpen}
+        onClose={() => setConfirmModalConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModalConfig.onConfirm}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        deleteCount={confirmModalConfig.deleteCount}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 // Root layout wrapper — contains scene, particles, and player bars
 // Audio engine is mounted exactly once here
 import { useRadioPlayer } from '../../hooks/useRadioPlayer';
+import { useAmbientSound } from '../../hooks/useAmbientSound';
 import SceneBackground from '../atmosphere/SceneBackground';
 import ParticleLayer from '../atmosphere/ParticleLayer';
 import RadioPlayer from '../player/RadioPlayer';
@@ -9,6 +10,7 @@ import MobilePlayer from '../player/MobilePlayer';
 
 function AudioEngine() {
   useRadioPlayer();
+  useAmbientSound();
   return null;
 }
 

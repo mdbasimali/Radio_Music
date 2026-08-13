@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Radio, Plus, MoreVertical, Edit, Power, Trash2, X, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
+import { ConfirmModal, toast } from '../components/dialogs';
 
 export default function Stations() {
   const [stations, setStations] = useState([]);
@@ -19,6 +20,15 @@ export default function Stations() {
   const [formColor, setFormColor] = useState('#d48c36');
   const [formIsActive, setFormIsActive] = useState(true);
   const [formError, setFormError] = useState('');
+
+  // Custom Confirmation Modal State
+  const [confirmModalConfig, setConfirmModalConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    deleteCount: 0,
+    onConfirm: () => {}
+  });
 
   // Dropdown menu state
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -71,22 +81,30 @@ export default function Stations() {
       const updated = await api.updateStation(station.id, { isActive: !station.isActive });
       setStations(stations.map(s => s.id === station.id ? { ...s, isActive: updated.isActive } : s));
       setActiveMenuId(null);
+      toast.success(`Successfully updated active status for "${station.name}".`);
     } catch (err) {
-      alert(`Failed to update status: ${err.message}`);
+      toast.error(`Failed to update status: ${err.message}`);
     }
   };
 
-  const handleDeleteStation = async (station) => {
-    if (!window.confirm(`Are you sure you want to delete station "${station.name}"?`)) {
-      return;
-    }
-    try {
-      await api.deleteStation(station.id);
-      setStations(stations.filter(s => s.id !== station.id));
-      setActiveMenuId(null);
-    } catch (err) {
-      alert(`Deletion failed: ${err.message}`);
-    }
+  const handleDeleteStation = (station) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Station?',
+      message: `Are you sure you want to delete station "${station.name}"? This action cannot be undone.`,
+      deleteCount: 1,
+      onConfirm: async () => {
+        try {
+          await api.deleteStation(station.id);
+          setStations(stations.filter(s => s.id !== station.id));
+          setActiveMenuId(null);
+          setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+          toast.success(`Successfully deleted station "${station.name}".`);
+        } catch (err) {
+          toast.error(`Deletion failed: ${err.message}`);
+        }
+      }
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -417,6 +435,15 @@ export default function Stations() {
           </div>
         </div>
       )}
+      {/* Custom Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModalConfig.isOpen}
+        onClose={() => setConfirmModalConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModalConfig.onConfirm}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        deleteCount={confirmModalConfig.deleteCount}
+      />
     </div>
   );
 }

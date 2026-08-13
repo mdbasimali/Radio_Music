@@ -100,9 +100,9 @@ const initialState = {
   isApiError: false,
   failedTrackIds: [], // Track failed playback sources to skip them
   ambientVolumes: getLocalStorage('radio_ambientVolumes', {
-    rain: 0.4,
-    crowd: 0.2,
-    static: 0.1,
+    rain: 0.20,
+    crowd: 0.18,
+    static: 0.08,
     crickets: 0.15,
   }),
   ambientEnabled: getLocalStorage('radio_ambientEnabled', {

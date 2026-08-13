@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Disc3, Plus, Search, Filter, RefreshCw, ChevronLeft, ChevronRight, X, Edit, Trash2, Power, MoreVertical, Play, Pause } from 'lucide-react';
 import { api } from '../services/api';
+import { ConfirmModal, toast } from '../components/dialogs';
 
 export default function Tracks() {
   const [tracks, setTracks] = useState([]);
@@ -23,6 +24,15 @@ export default function Tracks() {
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState(null);
+  
+  // Custom Confirmation Modal State
+  const [confirmModalConfig, setConfirmModalConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    deleteCount: 0,
+    onConfirm: () => {}
+  });
   
   // Edit Form Fields
   const [formTitle, setFormTitle] = useState('');
@@ -81,22 +91,32 @@ export default function Tracks() {
       const updated = await api.updateTrack(track.id, { status: nextStatus });
       setTracks(tracks.map(t => t.id === track.id ? { ...t, status: updated.status } : t));
       setActiveMenuId(null);
+      toast.success(`Successfully updated status for "${track.title}" to ${updated.status}.`);
     } catch (err) {
-      alert(`Failed to update status: ${err.message}`);
+      toast.error(`Failed to update status: ${err.message}`);
     }
   };
 
   // Delete single track
-  const handleDeleteTrack = async (track) => {
-    if (!window.confirm(`Are you sure you want to delete "${track.title}"?`)) return;
-    try {
-      await api.deleteTrack(track.id);
-      setTracks(tracks.filter(t => t.id !== track.id));
-      setActiveMenuId(null);
-      setTotal(prev => prev - 1);
-    } catch (err) {
-      alert(`Deletion failed: ${err.message}`);
-    }
+  const handleDeleteTrack = (track) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Track?',
+      message: `Are you sure you want to delete "${track.title}"? This action cannot be undone.`,
+      deleteCount: 1,
+      onConfirm: async () => {
+        try {
+          await api.deleteTrack(track.id);
+          setTracks(tracks.filter(t => t.id !== track.id));
+          setActiveMenuId(null);
+          setTotal(prev => prev - 1);
+          setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+          toast.success(`Successfully deleted "${track.title}".`);
+        } catch (err) {
+          toast.error(`Deletion failed: ${err.message}`);
+        }
+      }
+    });
   };
 
   // Open Edit Modal
@@ -170,27 +190,35 @@ export default function Tracks() {
       });
       setTracks(tracks.map(t => selectedIds.includes(t.id) ? { ...t, status: targetStatus } : t));
       setSelectedIds([]);
-      alert(`Successfully updated status for selected tracks.`);
+      toast.success(`Successfully updated status for selected tracks.`);
     } catch (err) {
-      alert(`Bulk update status failed: ${err.message}`);
+      toast.error(`Bulk update status failed: ${err.message}`);
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete the ${selectedIds.length} selected tracks?`)) return;
-    try {
-      await api.bulkActionTracks({
-        ids: selectedIds,
-        action: 'delete'
-      });
-      setTracks(tracks.filter(t => !selectedIds.includes(t.id)));
-      setTotal(prev => prev - selectedIds.length);
-      setSelectedIds([]);
-      alert(`Successfully deleted selected tracks.`);
-    } catch (err) {
-      alert(`Bulk delete failed: ${err.message}`);
-    }
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Selected Tracks?',
+      message: '', // Will fall back to dynamic count message
+      deleteCount: selectedIds.length,
+      onConfirm: async () => {
+        try {
+          await api.bulkActionTracks({
+            ids: selectedIds,
+            action: 'delete'
+          });
+          setTracks(tracks.filter(t => !selectedIds.includes(t.id)));
+          setTotal(prev => prev - selectedIds.length);
+          setSelectedIds([]);
+          setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+          toast.success(`Successfully deleted selected tracks.`);
+        } catch (err) {
+          toast.error(`Bulk delete failed: ${err.message}`);
+        }
+      }
+    });
   };
 
   // Audio Preview Handling (ONLY for direct provider, HTML5 Audio element)
@@ -202,12 +230,12 @@ export default function Tracks() {
     }
 
     if (track.provider === 'youtube') {
-      alert(`YouTube Video ID: ${track.providerId}. In Admin Panel, YouTube tracks cannot be played via HTML5 audio. Please play YouTube tracks in the public website.`);
+      toast.info(`YouTube Video ID: ${track.providerId}. In Admin Panel, YouTube tracks cannot be played via HTML5 audio. Please play YouTube tracks in the public website.`);
       return;
     }
 
     if (!track.audioUrl) {
-      alert('This track has no audio source URL.');
+      toast.error('This track has no audio source URL.');
       return;
     }
 
@@ -225,7 +253,7 @@ export default function Tracks() {
         };
       })
       .catch(err => {
-        alert(`Failed to play preview: ${err.message}`);
+        toast.error(`Failed to play preview: ${err.message}`);
       });
   };
 
@@ -639,6 +667,15 @@ export default function Tracks() {
           </div>
         </div>
       )}
+      {/* Custom Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModalConfig.isOpen}
+        onClose={() => setConfirmModalConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModalConfig.onConfirm}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        deleteCount={confirmModalConfig.deleteCount}
+      />
     </div>
   );
 }

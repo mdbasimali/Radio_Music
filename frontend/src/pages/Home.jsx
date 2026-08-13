@@ -30,9 +30,9 @@ export default function Home() {
           <span className="text-[8px] font-body uppercase tracking-[0.3em] text-[#d48c36]/80 font-medium">
             Nostalgia on Air
           </span>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className={`w-1.5 h-1.5 rounded-full ${isConnected && listenerCount !== null ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className="text-[8px] font-mono tracking-wider uppercase text-paper-muted/60">
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className={`w-2.5 h-2.5 rounded-full ${isConnected && listenerCount !== null ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+            <span className="text-[11px] font-mono tracking-wider uppercase text-paper-muted/80 font-medium">
               {isConnected && listenerCount !== null ? `${listenerCount} listening` : 'Listening count unavailable'}
             </span>
           </div>

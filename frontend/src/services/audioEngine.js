@@ -116,21 +116,21 @@ export function setAmbientLayer(id, enabled, volume) {
     // Start audio element if it's paused
     if (audio.paused) {
       audio.play().catch((err) => {
-        console.error(`Error playing ambient layer ${id}:`, err);
+        console.warn(`Error playing ambient layer ${id}:`, err);
       });
     }
-    // Smoothly fade in to target volume
-    gainNode.gain.setTargetAtTime(volume * 0.4, ctx.currentTime, 0.8);
+    // Smoothly fade in to target volume over ~300-500ms
+    gainNode.gain.setTargetAtTime(volume, ctx.currentTime, 0.15);
   } else {
-    // Smoothly fade out to 0
-    gainNode.gain.setTargetAtTime(0, ctx.currentTime, 0.8);
+    // Smoothly fade out to 0 over ~300-500ms
+    gainNode.gain.setTargetAtTime(0, ctx.currentTime, 0.15);
     // Pause audio after fade finishes
     setTimeout(() => {
       // Check if it is still disabled before pausing
       if (gainNode.gain.value < 0.01 && !audio.paused) {
         audio.pause();
       }
-    }, 2500);
+    }, 600);
   }
 }
 

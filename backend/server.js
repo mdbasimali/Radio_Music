@@ -16,18 +16,6 @@ const playlistsRouter = require('./routes/playlists');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Setup HTTP server and Socket.IO
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST'],
-    credentials: true
-  }
-});
-
-app.set('io', io);
-
 // Define allowed CORS origins
 const allowedOrigins = [];
 if (process.env.FRONTEND_URL) {
@@ -47,6 +35,18 @@ if (allowedOrigins.length === 0) {
     'http://localhost:5001'
   );
 }
+
+// Setup HTTP server and Socket.IO
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+app.set('io', io);
 
 console.log('Allowed CORS Origins:', allowedOrigins);
 
