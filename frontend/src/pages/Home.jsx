@@ -24,7 +24,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* 90s Logo */}
+          {/* 90s Logo — unchanged */}
           <img
             src="/logo.png"
             alt="90s Radio"
@@ -32,13 +32,21 @@ export default function Home() {
             style={{ mixBlendMode: 'screen', filter: 'drop-shadow(0 0 8px rgba(212,140,54,0.4))' }}
             draggable={false}
           />
-          <div className="flex items-center gap-2 mt-1">
+          {/* Station wordmark text */}
+          <h1 className="font-display text-base font-bold tracking-[0.22em] text-[#e8d5a3] leading-tight">
+            90SGAANA
+          </h1>
+          <span className="text-[8px] font-body uppercase tracking-[0.32em] text-[#d48c36]/80 font-medium mb-1">
+            Nostalgia on Air
+          </span>
+          <div className="flex items-center gap-2 mt-0.5">
             <span className={`w-2.5 h-2.5 rounded-full ${isConnected && listenerCount !== null ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
             <span className="text-[11px] font-mono tracking-wider uppercase text-paper-muted/80 font-medium">
               {isConnected && listenerCount !== null ? `${listenerCount} listening` : 'Listening count unavailable'}
             </span>
           </div>
         </motion.div>
+
 
         {/* Hide interface toggle */}
         <motion.button
