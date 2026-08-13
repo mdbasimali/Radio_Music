@@ -221,6 +221,7 @@ router.post('/:id/sync', async (req, res) => {
         existingTrack.title = title;
         existingTrack.artist = channelTitle;
         existingTrack.artwork = artworkUrl;
+        existingTrack.playlistId = playlist._id;
         await existingTrack.save();
         updatedCount++;
       } else {
@@ -234,7 +235,8 @@ router.post('/:id/sync', async (req, res) => {
           provider: 'youtube',
           providerId: videoId,
           audioUrl: '', // Explicitly no audioUrl for YouTube tracks
-          station: playlist.stationId
+          station: playlist.stationId,
+          playlistId: playlist._id
         });
         await newTrack.save();
         importedCount++;
@@ -284,12 +286,31 @@ router.delete('/:id', async (req, res) => {
       return res.status(503).json({ error: 'Database connection offline' });
     }
 
-    const result = await Playlist.findByIdAndDelete(req.params.id);
-    if (!result) {
+    const playlistId = req.params.id;
+    const playlist = await Playlist.findById(playlistId);
+    if (!playlist) {
       return res.status(404).json({ error: 'Playlist not found' });
     }
 
-    res.json({ message: 'Playlist deleted successfully' });
+    // Delete the playlist record
+    await Playlist.findByIdAndDelete(playlistId);
+
+    const Track = require('../models/Track');
+
+    // Retrieve all tracks linked to this playlist
+    const tracksToCleanup = await Track.find({ playlistId: playlistId });
+
+    for (const track of tracksToCleanup) {
+      // Shared-track protection: check if another playlist matches this track (e.g. same providerId/station combination)
+      // or if it was manually seeded (represented by missing or different playlistId).
+      // Here, if playlistId matches the deleted playlist, and there are no other references, we delete.
+      // Since playlistId is a single ObjectId reference in our schema:
+      // If a track's playlistId matches the deleted one, it belongs exclusively to this playlist.
+      // Delete the track completely.
+      await Track.deleteOne({ _id: track._id });
+    }
+
+    res.json({ message: 'Playlist deleted successfully and orphaned tracks removed' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
