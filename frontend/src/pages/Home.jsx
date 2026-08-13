@@ -39,17 +39,15 @@ export default function Home() {
 
               {/* 90S GAANA */}
               <h1
-                className="font-display font-bold whitespace-nowrap"
+                className="font-sans font-extrabold uppercase whitespace-nowrap"
                 style={{
-                  fontSize: 'clamp(14px, 2.5vw, 21px)',
-                  letterSpacing: '0.12em',
-                  lineHeight: '1.2',
-                  verticalAlign: 'baseline',
-                  background: 'linear-gradient(180deg, #f5e4a3 0%, #c9a84c 45%, #a87c2a 100%)',
+                  fontSize: 'clamp(14px, 2.5vw, 20px)',
+                  letterSpacing: '0.18em',
+                  background: 'linear-gradient(180deg, #fbf2cc 0%, #c9a84c 45%, #a87c2a 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
-                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))',
+                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
                 }}
               >
                 90S GAANA
