@@ -1,23 +1,22 @@
 // src/components/layout/AppShell.jsx
-// Root layout wrapper — contains scene, particles, and player bars
-// Audio engine is mounted exactly once here
+// Root layout wrapper — contains scene, particles, and player bars.
+// Audio engine is mounted exactly once here.
 import { useRadioPlayer } from '../../hooks/useRadioPlayer';
-import { useAmbientSound } from '../../hooks/useAmbientSound';
 import SceneBackground from '../atmosphere/SceneBackground';
 import ParticleLayer from '../atmosphere/ParticleLayer';
 import RadioPlayer from '../player/RadioPlayer';
 import MobilePlayer from '../player/MobilePlayer';
 
+// Only the radio playback engine — ambient sound removed
 function AudioEngine() {
   useRadioPlayer();
-  useAmbientSound();
   return null;
 }
 
 export default function AppShell({ children }) {
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      {/* Mount audio engine exactly once */}
+      {/* Mount radio playback engine exactly once */}
       <AudioEngine />
 
       {/* Atmospheric layers (z-0) */}

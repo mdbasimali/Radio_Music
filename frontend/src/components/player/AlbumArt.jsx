@@ -1,8 +1,11 @@
 // src/components/player/AlbumArt.jsx
-// Animated vinyl record with groove rings — spins while playing
-import { motion } from 'framer-motion';
+// Dynamic artwork display — shows live current-track artwork image.
+// Falls back to animated vinyl record when no real artwork is available.
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRadio } from '../../context/RadioContext';
 
+// ── Vinyl fallback (shown when no artwork image is available) ──────────────
 function VinylRecord({ color, isPlaying, size = 80 }) {
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -20,12 +23,9 @@ function VinylRecord({ color, isPlaying, size = 80 }) {
           <div
             key={i}
             className="absolute rounded-full vinyl-groove"
-            style={{
-              inset: `${((1 - scale) / 2) * 100}%`,
-            }}
+            style={{ inset: `${((1 - scale) / 2) * 100}%` }}
           />
         ))}
-
         {/* Label in center */}
         <div
           className="absolute rounded-full flex items-center justify-center"
@@ -34,7 +34,6 @@ function VinylRecord({ color, isPlaying, size = 80 }) {
             background: `radial-gradient(circle, ${color}dd, ${color}88)`,
           }}
         >
-          {/* Center hole */}
           <div className="w-[20%] h-[20%] rounded-full bg-night-900" />
         </div>
       </motion.div>
@@ -42,24 +41,105 @@ function VinylRecord({ color, isPlaying, size = 80 }) {
   );
 }
 
-export default function AlbumArt({ size = 80, className = '' }) {
-  const { currentStation, isPlaying } = useRadio();
+// ── Live artwork image (shown when a real artwork URL is available) ─────────
+function ArtworkImage({ src, alt, color, isPlaying, size }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
 
-  const color = currentStation?.color || '#d48c36';
+  // Reset when src changes (track changes)
+  useEffect(() => {
+    setLoaded(false);
+    setError(false);
+  }, [src]);
+
+  if (error) return null; // Let parent fall back to vinyl
 
   return (
-    <div className={`relative flex-shrink-0 ${className}`}>
-      <VinylRecord
-        color={color}
-        isPlaying={isPlaying}
-        size={size}
+    <motion.div
+      className="absolute inset-0 rounded-full overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: loaded ? 1 : 0 }}
+      transition={{ duration: 0.35 }}
+      style={{
+        boxShadow: `0 0 0 2px ${color}55, 0 0 16px ${color}33`,
+      }}
+    >
+      {/* Subtle slow rotation while playing — premium feel */}
+      <motion.div
+        className="w-full h-full"
+        animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
+        transition={isPlaying ? { duration: 18, repeat: Infinity, ease: 'linear' } : { duration: 1 }}
+      >
+        <img
+          src={src}
+          alt={alt}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          className="w-full h-full rounded-full"
+          style={{ objectFit: 'cover', display: 'block' }}
+          draggable={false}
+        />
+      </motion.div>
+
+      {/* Liquid-glass inner edge highlight on image */}
+      <div
+        className="absolute inset-0 rounded-full pointer-events-none"
+        style={{
+          background: 'linear-gradient(145deg, rgba(255,255,255,0.15) 0%, transparent 50%)',
+        }}
       />
-      {/* Playing pulse ring */}
+    </motion.div>
+  );
+}
+
+// ── Main AlbumArt component ────────────────────────────────────────────────
+export default function AlbumArt({ size = 80, className = '' }) {
+  const { currentStation, currentTrack, isPlaying } = useRadio();
+  const color = currentStation?.color || '#d48c36';
+
+  // Determine artwork URL:
+  // 1. currentTrack.artwork — already set to YouTube thumbnail URL by backend
+  // 2. For YouTube tracks: construct hqdefault from providerId as fallback
+  // 3. No artwork → show vinyl
+  const artworkUrl = (() => {
+    const raw = currentTrack?.artwork;
+    // If it's a real URL (http/https), use it directly
+    if (raw && typeof raw === 'string' && raw.startsWith('http')) return raw;
+    // If no real URL but it's a YouTube track, build thumbnail
+    if (currentTrack?.provider === 'youtube' && currentTrack?.providerId) {
+      return `https://i.ytimg.com/vi/${currentTrack.providerId}/mqdefault.jpg`;
+    }
+    return null;
+  })();
+
+  return (
+    <div
+      className={`relative flex-shrink-0 ${className}`}
+      style={{ width: size, height: size }}
+    >
+      {/* Always render vinyl underneath as the fallback */}
+      <VinylRecord color={color} isPlaying={isPlaying} size={size} />
+
+      {/* Overlay the live artwork image on top with crossfade */}
+      <AnimatePresence mode="wait">
+        {artworkUrl && (
+          <ArtworkImage
+            key={`${currentTrack?.id}-${artworkUrl}`}
+            src={artworkUrl}
+            alt={currentTrack?.title || 'Track artwork'}
+            color={color}
+            isPlaying={isPlaying}
+            size={size}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Playing pulse ring — same as before */}
       {isPlaying && (
         <motion.div
           className="absolute inset-0 rounded-full pointer-events-none"
-          style={{ border: `1px solid ${color}` }}
-          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+          style={{ border: `1.5px solid ${color}` }}
+          animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0, 0.55] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
       )}

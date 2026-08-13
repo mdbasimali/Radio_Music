@@ -1,6 +1,7 @@
 // src/context/RadioContext.jsx
 import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { getStations, getTracksByStation } from '../services/api';
+import { getSavedPlaybackState, savePlaybackState, clearSavedPlaybackState } from '../services/playbackPersistence';
 
 // --- Local Storage Helpers ---
 const getLocalStorage = (key, fallback) => {
@@ -73,12 +74,11 @@ function shuffleArray(array) {
   return arr;
 }
 
-// Shuffle without immediate repeat of the last played song
+// Shuffle without immediate repeat of the last played source
 function shuffleQueueWithNoImmediateRepeat(queue, lastPlayedSource) {
   if (queue.length <= 1) return [...queue];
   let shuffled = shuffleArray(queue);
   if (lastPlayedSource && shuffled[0].id === lastPlayedSource.id) {
-    // Swap first and last element
     const temp = shuffled[0];
     shuffled[0] = shuffled[shuffled.length - 1];
     shuffled[shuffled.length - 1] = temp;
@@ -98,28 +98,20 @@ const initialState = {
   duration: 0,
   isLoading: false,
   isApiError: false,
-  failedTrackIds: [], // Track failed playback sources to skip them
-  ambientVolumes: getLocalStorage('radio_ambientVolumes', {
-    rain: 0.20,
-    crowd: 0.18,
-    static: 0.08,
-    crickets: 0.15,
-  }),
-  ambientEnabled: getLocalStorage('radio_ambientEnabled', {
-    rain: false,
-    crowd: false,
-    static: false,
-    crickets: false,
-  }),
+  failedTrackIds: [],
+  restoredState: null, // Holds restored position & target track ID on startup
 };
 
 function radioReducer(state, action) {
   switch (action.type) {
     case 'INIT_STATIONS': {
-      const lastStationId = localStorage.getItem('radio_lastStationId');
-      const currentStation = lastStationId
-        ? action.payload.find((s) => s.id === lastStationId) || action.payload[0] || null
+      const savedState = getSavedPlaybackState();
+      const savedStationId = savedState?.stationId || localStorage.getItem('radio_lastStationId');
+      
+      const currentStation = savedStationId
+        ? action.payload.find((s) => s.id === savedStationId) || action.payload[0] || null
         : action.payload[0] || null;
+
       return {
         ...state,
         stations: action.payload,
@@ -129,16 +121,57 @@ function radioReducer(state, action) {
     }
     case 'SET_QUEUE': {
       const mappedQueue = action.payload.map(mapTrackToAudioSource);
-      // Auto-shuffle on station/queue initialization
-      const shuffledQueue = shuffleArray(mappedQueue);
+      const savedState = getSavedPlaybackState();
+      
+      let targetIndex = 0;
+      let restoredStatePayload = null;
+
+      // Check if saved track exists in fetched station queue
+      if (savedState && savedState.trackId) {
+        const foundIdx = mappedQueue.findIndex(t => t.id === savedState.trackId || t.providerId === savedState.providerId);
+        if (foundIdx !== -1) {
+          targetIndex = foundIdx;
+          restoredStatePayload = {
+            currentTime: savedState.currentTime || 0,
+            isPlaying: savedState.isPlaying || false,
+            trackId: savedState.trackId,
+          };
+          console.log('[RadioContext] Restoring saved track:', mappedQueue[targetIndex].title, 'at time:', savedState.currentTime);
+        } else {
+          // Saved track no longer valid in current station queue
+          clearSavedPlaybackState();
+        }
+      }
+
+      // If restoring saved track, put it at targetIndex in mapped queue without forcing it to 0
+      let finalQueue = mappedQueue;
+      if (restoredStatePayload) {
+        // Keep queue order or shuffle remaining
+        const targetTrack = mappedQueue[targetIndex];
+        const remaining = mappedQueue.filter((_, idx) => idx !== targetIndex);
+        const shuffledRemaining = shuffleArray(remaining);
+        finalQueue = [targetTrack, ...shuffledRemaining];
+        targetIndex = 0;
+      } else {
+        finalQueue = shuffleArray(mappedQueue);
+        targetIndex = 0;
+      }
+
       return {
         ...state,
-        queue: shuffledQueue,
-        currentTrackIndex: 0,
-        currentTime: 0,
+        queue: finalQueue,
+        currentTrackIndex: targetIndex,
+        currentTime: restoredStatePayload ? restoredStatePayload.currentTime : 0,
+        restoredState: restoredStatePayload,
         duration: 0,
         isApiError: false,
         failedTrackIds: [],
+      };
+    }
+    case 'CLEAR_RESTORED_STATE': {
+      return {
+        ...state,
+        restoredState: null,
       };
     }
     case 'SET_STATION_ONLY':
@@ -148,6 +181,7 @@ function radioReducer(state, action) {
       return {
         ...state,
         currentStation: action.payload,
+        restoredState: null, // clear restore context when manually switching station
       };
     case 'SET_PLAYING':
       return { ...state, isPlaying: action.payload };
@@ -190,7 +224,7 @@ function radioReducer(state, action) {
       );
       
       if (count >= queue.length * 2) {
-        return { ...state, queue, isPlaying: false, currentTime: 0 };
+        return { ...state, queue, isPlaying: false, currentTime: 0, restoredState: null };
       }
       
       return {
@@ -198,6 +232,7 @@ function radioReducer(state, action) {
         queue,
         currentTrackIndex: nextIndex,
         currentTime: 0,
+        restoredState: null,
       };
     }
     case 'PREV_TRACK': {
@@ -215,10 +250,10 @@ function radioReducer(state, action) {
       );
       
       if (count >= state.queue.length) {
-        return { ...state, isPlaying: false, currentTime: 0 };
+        return { ...state, isPlaying: false, currentTime: 0, restoredState: null };
       }
       
-      return { ...state, currentTrackIndex: prevIndex, currentTime: 0 };
+      return { ...state, currentTrackIndex: prevIndex, currentTime: 0, restoredState: null };
     }
     case 'ADD_TO_QUEUE': {
       const mapped = mapTrackToAudioSource(action.payload);
@@ -229,7 +264,6 @@ function radioReducer(state, action) {
     }
     case 'REMOVE_FROM_QUEUE': {
       const filteredQueue = state.queue.filter((item) => item.id !== action.payload);
-      // Adjust index if we removed the active track or shifted items
       let newIdx = state.currentTrackIndex;
       if (newIdx >= filteredQueue.length && filteredQueue.length > 0) {
         newIdx = filteredQueue.length - 1;
@@ -248,35 +282,19 @@ function radioReducer(state, action) {
         queue: shuffled,
         currentTrackIndex: 0,
         currentTime: 0,
+        restoredState: null,
       };
     }
     case 'CLEAR_QUEUE':
+      clearSavedPlaybackState();
       return {
         ...state,
         queue: [],
         currentTrackIndex: 0,
         currentTime: 0,
         isPlaying: false,
+        restoredState: null,
       };
-    case 'SET_AMBIENT_VOLUME': {
-      const updatedVolumes = { ...state.ambientVolumes, [action.payload.id]: action.payload.volume };
-      setLocalStorage('radio_ambientVolumes', updatedVolumes);
-      return {
-        ...state,
-        ambientVolumes: updatedVolumes,
-      };
-    }
-    case 'TOGGLE_AMBIENT': {
-      const updatedEnabled = {
-        ...state.ambientEnabled,
-        [action.payload]: !state.ambientEnabled[action.payload],
-      };
-      setLocalStorage('radio_ambientEnabled', updatedEnabled);
-      return {
-        ...state,
-        ambientEnabled: updatedEnabled,
-      };
-    }
     case 'INVALIDATE_TRACKS': {
       const invalidIds = action.payload || [];
       const filteredQueue = state.queue.filter((item) => !invalidIds.includes(item.id));
@@ -289,20 +307,19 @@ function radioReducer(state, action) {
         shouldStopAndAdvance = true;
       }
 
-      // Adjust index
       if (newIdx >= filteredQueue.length && filteredQueue.length > 0) {
         newIdx = filteredQueue.length - 1;
       }
 
-      // If playing the deleted track, stop and load next
       if (shouldStopAndAdvance) {
-        // Reset track index or advance
+        clearSavedPlaybackState();
         return {
           ...state,
           queue: filteredQueue,
           currentTrackIndex: filteredQueue.length > 0 ? newIdx % filteredQueue.length : 0,
           currentTime: 0,
-          isPlaying: filteredQueue.length > 0, // Keep playing if we have other songs
+          isPlaying: filteredQueue.length > 0,
+          restoredState: null,
         };
       }
 
@@ -336,9 +353,7 @@ export function RadioProvider({ children }) {
   const shuffleQueue = useCallback(() => dispatch({ type: 'SHUFFLE_QUEUE' }), []);
   const clearQueue = useCallback(() => dispatch({ type: 'CLEAR_QUEUE' }), []);
   const markTrackFailed = useCallback((id) => dispatch({ type: 'MARK_TRACK_FAILED', payload: id }), []);
-
-  const setAmbientVolume = useCallback((id, volume) => dispatch({ type: 'SET_AMBIENT_VOLUME', payload: { id, volume } }), []);
-  const toggleAmbient = useCallback((id) => dispatch({ type: 'TOGGLE_AMBIENT', payload: id }), []);
+  const clearRestoredState = useCallback(() => dispatch({ type: 'CLEAR_RESTORED_STATE' }), []);
 
   // Fetch stations on initial load
   useEffect(() => {
@@ -400,9 +415,8 @@ export function RadioProvider({ children }) {
         shuffleQueue,
         clearQueue,
         markTrackFailed,
-        setAmbientVolume,
-        toggleAmbient,
         invalidateTracks,
+        clearRestoredState,
       }}
     >
       {children}

@@ -5,6 +5,7 @@ import { useRadio } from '../context/RadioContext';
 import * as audioEngine from '../services/audioEngine';
 import { playbackManager } from '../services/playbackManager';
 import { useMediaSession } from './useMediaSession';
+import { savePlaybackState } from '../services/playbackPersistence';
 
 let _preloadAudio = null;
 
@@ -20,8 +21,10 @@ export function useRadioPlayer() {
     isPlaying,
     volume,
     isMuted,
+    currentTime,
     queue,
     failedTrackIds,
+    restoredState,
     setPlaying,
     setCurrentTime,
     setDuration,
@@ -30,13 +33,14 @@ export function useRadioPlayer() {
     prevTrack,
     markTrackFailed,
     invalidateTracks,
+    clearRestoredState,
   } = useRadio();
 
   // Stable callbacks for Media Session handlers
   const handlePlay  = useCallback(() => setPlaying(true),  [setPlaying]);
   const handlePause = useCallback(() => setPlaying(false), [setPlaying]);
 
-  // Wire up Web Media Session API (lock-screen controls, background state)
+  // Wire up Web Media Session API
   useMediaSession({
     currentTrack,
     currentStation,
@@ -48,35 +52,89 @@ export function useRadioPlayer() {
   });
 
   const lastLoadedTrackIdRef = useRef(null);
+  const seekRestoredRef = useRef(false);
+  const lastSaveTimeRef = useRef(0);
 
-  // Store latest values in a ref to avoid stale closures in event listeners
+  // Store latest values in a ref to avoid stale closures
   const stateRef = useRef({
     currentTrack,
+    currentStation,
     isPlaying,
     volume,
     isMuted,
+    currentTime,
+    restoredState,
     nextTrack,
     markTrackFailed,
     setPlaying,
     setLoading,
     setCurrentTime,
     setDuration,
+    clearRestoredState,
   });
 
   useEffect(() => {
     stateRef.current = {
       currentTrack,
+      currentStation,
       isPlaying,
       volume,
       isMuted,
+      currentTime,
+      restoredState,
       nextTrack,
       markTrackFailed,
       setPlaying,
       setLoading,
       setCurrentTime,
       setDuration,
+      clearRestoredState,
     };
-  }, [currentTrack, isPlaying, volume, isMuted, nextTrack, markTrackFailed, setPlaying, setLoading, setCurrentTime, setDuration]);
+  });
+
+  // Periodic persistence of playback state every 1.5 seconds or on state change
+  useEffect(() => {
+    if (!currentTrack || !currentStation) return;
+
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current > 1500 || !isPlaying) {
+      lastSaveTimeRef.current = now;
+      savePlaybackState({
+        stationId: currentStation.id,
+        trackId: currentTrack.id,
+        providerId: currentTrack.providerId,
+        provider: currentTrack.provider,
+        currentTime: currentTime,
+        isPlaying: isPlaying,
+        volume: volume,
+      });
+    }
+  }, [currentTrack, currentStation, currentTime, isPlaying, volume]);
+
+  // Save state immediately on page unload / hide
+  useEffect(() => {
+    const handleUnload = () => {
+      if (stateRef.current.currentTrack && stateRef.current.currentStation) {
+        savePlaybackState({
+          stationId: stateRef.current.currentStation.id,
+          trackId: stateRef.current.currentTrack.id,
+          providerId: stateRef.current.currentTrack.providerId,
+          provider: stateRef.current.currentTrack.provider,
+          currentTime: stateRef.current.currentTime,
+          isPlaying: stateRef.current.isPlaying,
+          volume: stateRef.current.volume,
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('pagehide', handleUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('pagehide', handleUnload);
+    };
+  }, []);
 
   // Setup socket connection for real-time playlist invalidation updates
   useEffect(() => {
@@ -89,7 +147,6 @@ export function useRadioPlayer() {
     });
 
     socket.on('tracks_invalidated', ({ deletedTrackIds }) => {
-      console.log('[Socket] Received tracks_invalidated event:', deletedTrackIds);
       if (deletedTrackIds && deletedTrackIds.length > 0) {
         invalidateTracks(deletedTrackIds);
       }
@@ -109,7 +166,21 @@ export function useRadioPlayer() {
         stateRef.current.nextTrack();
       },
       onLoadStart: () => stateRef.current.setLoading(true),
-      onCanPlay: () => stateRef.current.setLoading(false),
+      onCanPlay: () => {
+        stateRef.current.setLoading(false);
+
+        // Perform seek restoration when player becomes ready
+        const res = stateRef.current.restoredState;
+        if (res && !seekRestoredRef.current && res.currentTime > 0) {
+          seekRestoredRef.current = true;
+          console.log('[useRadioPlayer] Seeking to restored position:', res.currentTime);
+          playbackManager.seek(res.currentTime);
+          if (!res.isPlaying) {
+            playbackManager.pause();
+          }
+          stateRef.current.clearRestoredState();
+        }
+      },
       onError: (err) => {
         console.error('Playback error event:', err);
         stateRef.current.setLoading(false);
@@ -125,19 +196,19 @@ export function useRadioPlayer() {
       }
     });
 
-    // Sync volume immediately
     playbackManager.setVolume(volume);
     playbackManager.setMuted(isMuted);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Track changed → change source and play if previously playing
+  // Track changed → change source
   useEffect(() => {
     if (!currentTrack) return;
     if (failedTrackIds.includes(currentTrack.id)) return;
 
     if (lastLoadedTrackIdRef.current !== currentTrack.id) {
       lastLoadedTrackIdRef.current = currentTrack.id;
+      seekRestoredRef.current = false;
       playbackManager.load(currentTrack);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,7 +227,7 @@ export function useRadioPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
 
-  // Handle volume changes (persisted across tracks)
+  // Handle volume changes
   useEffect(() => {
     playbackManager.setVolume(volume);
     playbackManager.setMuted(isMuted);

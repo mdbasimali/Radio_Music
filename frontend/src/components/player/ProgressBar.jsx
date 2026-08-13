@@ -10,7 +10,7 @@ function formatTime(secs) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function ProgressBar({ className = '' }) {
+export default function ProgressBar({ className = '', compact = false, showTime = false }) {
   const { currentTime, duration, currentStation, setCurrentTime } = useRadio();
 
   const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -25,19 +25,21 @@ export default function ProgressBar({ className = '' }) {
   );
 
   return (
-    <div className={`flex items-center gap-3 w-full ${className}`}>
-      <span className="text-xs font-body text-paper-dark tabular-nums w-8 text-right flex-shrink-0">
-        {formatTime(currentTime)}
-      </span>
+    <div className={`flex items-center ${compact ? 'gap-1.5' : 'gap-3'} w-full ${className}`}>
+      {(showTime || !compact) && (
+        <span className={`${compact ? 'text-[8.5px]' : 'text-xs'} font-mono text-paper-dark/80 tabular-nums flex-shrink-0`} style={{ color: 'var(--theme-muted, #a09070)' }}>
+          {formatTime(currentTime)}
+        </span>
+      )}
 
-      <div className="relative flex-1 flex items-center group h-4">
+      <div className={`relative flex-1 flex items-center group ${compact ? 'h-2.5' : 'h-4'}`}>
         {/* Track background */}
         <div className="absolute inset-y-0 flex items-center w-full pointer-events-none">
           <div className="w-full h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
             {/* Filled portion */}
             <div
               className="h-full rounded-full transition-all duration-75"
-              style={{ width: `${pct}%`, background: currentStation?.color || '#d48c36' }}
+              style={{ width: `${pct}%`, background: currentStation?.color || 'var(--theme-accent, #d48c36)' }}
             />
           </div>
         </div>
@@ -55,9 +57,11 @@ export default function ProgressBar({ className = '' }) {
         />
       </div>
 
-      <span className="text-xs font-body text-paper-dark tabular-nums w-8 flex-shrink-0">
-        {formatTime(duration)}
-      </span>
+      {(showTime || !compact) && (
+        <span className={`${compact ? 'text-[8.5px]' : 'text-xs'} font-mono text-paper-dark/80 tabular-nums flex-shrink-0`} style={{ color: 'var(--theme-muted, #a09070)' }}>
+          {formatTime(duration)}
+        </span>
+      )}
     </div>
   );
 }

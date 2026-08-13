@@ -12,7 +12,19 @@
   --color-sari: #9e2a2b;
   --player-height: 110px;
   --station-color: rgba(212, 140, 54, 0.25);
+
+  /* ── Theme variables (overridden dynamically by ThemeContext) ── */
+  --theme-bg:          #070406;
+  --theme-bg2:         #0d0809;
+  --theme-accent:      #d48c36;
+  --theme-accent2:     #c9a84c;
+  --theme-paper:       #ebdcb9;
+  --theme-paper-muted: #a09070;
+  --theme-glow:        rgba(212,140,54,0.35);
+  --theme-card-bg:     rgba(20,12,10,0.80);
+  --theme-border:      rgba(212,140,54,0.18);
 }
+
 
 /* ─── Base Reset ─────────────────────────────────────────────── */
 *, *::before, *::after {
@@ -114,4 +126,111 @@ body {
 
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── Theme overrides — applied via data-theme attribute on <html> ────── */
+/* Each block overrides the fixed colors in SceneBackground and body bg.   */
+
+/* DEFAULT (90s Radio) — already the CSS variable defaults, no override needed */
+
+/* NIGHT */
+[data-theme="night"] body,
+[data-theme="night"] { background-color: #05060f; }
+[data-theme="night"] .fixed.inset-0.z-0 {
+  background-color: #05060f !important;
+}
+[data-theme="night"] .fixed.inset-0.z-0 > div:first-child {
+  background: radial-gradient(ellipse 80% 70% at 50% 15%, #0e0c2a 0%, #05060f 100%) !important;
+}
+[data-theme="night"] ::-webkit-scrollbar-track { background: #070810; }
+[data-theme="night"] ::-webkit-scrollbar-thumb { background: #3a3580; }
+
+/* SUNSET */
+[data-theme="sunset"] body,
+[data-theme="sunset"] { background-color: #180506; }
+[data-theme="sunset"] .fixed.inset-0.z-0 {
+  background-color: #180506 !important;
+}
+[data-theme="sunset"] .fixed.inset-0.z-0 > div:first-child {
+  background: radial-gradient(ellipse 80% 70% at 50% 15%, #2a0a08 0%, #180506 100%) !important;
+}
+[data-theme="sunset"] ::-webkit-scrollbar-track { background: #1a0607; }
+[data-theme="sunset"] ::-webkit-scrollbar-thumb { background: #a03020; }
+
+/* VINYL */
+[data-theme="vinyl"] body,
+[data-theme="vinyl"] { background-color: #090909; }
+[data-theme="vinyl"] .fixed.inset-0.z-0 {
+  background-color: #090909 !important;
+}
+[data-theme="vinyl"] .fixed.inset-0.z-0 > div:first-child {
+  background: radial-gradient(ellipse 80% 70% at 50% 15%, #181410 0%, #090909 100%) !important;
+}
+[data-theme="vinyl"] ::-webkit-scrollbar-track { background: #0d0d0d; }
+[data-theme="vinyl"] ::-webkit-scrollbar-thumb { background: #806030; }
+
+/* NEON */
+[data-theme="neon"] body,
+[data-theme="neon"] { background-color: #04080c; }
+[data-theme="neon"] .fixed.inset-0.z-0 {
+  background-color: #04080c !important;
+}
+[data-theme="neon"] .fixed.inset-0.z-0 > div:first-child {
+  background: radial-gradient(ellipse 80% 70% at 50% 15%, #071420 0%, #04080c 100%) !important;
+}
+[data-theme="neon"] ::-webkit-scrollbar-track { background: #050a10; }
+[data-theme="neon"] ::-webkit-scrollbar-thumb { background: #006080; }
+
+/* OCEAN */
+[data-theme="ocean"] body,
+[data-theme="ocean"] { background-color: #021020; }
+[data-theme="ocean"] .fixed.inset-0.z-0 {
+  background-color: #021020 !important;
+}
+[data-theme="ocean"] .fixed.inset-0.z-0 > div:first-child {
+  background: radial-gradient(ellipse 80% 70% at 50% 15%, #041830 0%, #021020 100%) !important;
+}
+[data-theme="ocean"] ::-webkit-scrollbar-track { background: #031525; }
+[data-theme="ocean"] ::-webkit-scrollbar-thumb { background: #005a70; }
+
+/* FOREST */
+[data-theme="forest"] body,
+[data-theme="forest"] { background-color: #050e08; }
+[data-theme="forest"] .fixed.inset-0.z-0 {
+  background-color: #050e08 !important;
+}
+[data-theme="forest"] .fixed.inset-0.z-0 > div:first-child {
+  background: radial-gradient(ellipse 80% 70% at 50% 15%, #0a1c0e 0%, #050e08 100%) !important;
+}
+[data-theme="forest"] ::-webkit-scrollbar-track { background: #071210; }
+[data-theme="forest"] ::-webkit-scrollbar-thumb { background: #2a7040; }
+
+/* COFFEE */
+[data-theme="coffee"] body,
+[data-theme="coffee"] { background-color: #100806; }
+[data-theme="coffee"] .fixed.inset-0.z-0 {
+  background-color: #100806 !important;
+}
+[data-theme="coffee"] .fixed.inset-0.z-0 > div:first-child {
+  background: radial-gradient(ellipse 80% 70% at 50% 15%, #201208 0%, #100806 100%) !important;
+}
+[data-theme="coffee"] ::-webkit-scrollbar-track { background: #120a07; }
+[data-theme="coffee"] ::-webkit-scrollbar-thumb { background: #704020; }
+
+/* RETRO */
+[data-theme="retro"] body,
+[data-theme="retro"] { background-color: #0c0608; }
+[data-theme="retro"] .fixed.inset-0.z-0 {
+  background-color: #0c0608 !important;
+}
+[data-theme="retro"] .fixed.inset-0.z-0 > div:first-child {
+  background: radial-gradient(ellipse 80% 70% at 50% 15%, #1a0808 0%, #0c0608 100%) !important;
+}
+[data-theme="retro"] ::-webkit-scrollbar-track { background: #0e0709; }
+[data-theme="retro"] ::-webkit-scrollbar-thumb { background: #803020; }
+
+/* ─── Universal accent glow for station cards (uses CSS var) ──────────── */
+/* Station card active border uses the theme accent var */
+[data-theme] button[id^="station-"] {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
