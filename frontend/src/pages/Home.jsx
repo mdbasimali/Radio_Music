@@ -28,12 +28,13 @@ export default function Home() {
 
           {/* 90SGAANA Deployed Logo Image */}
           <img
-            src="/90sgaana-logo.jpg"
+            src="/90sgaana-logo.png"
             alt="90SGAANA"
             className="h-10 w-auto object-contain"
-            style={{ mixBlendMode: 'screen', filter: 'drop-shadow(0 0 6px rgba(201,168,76,0.3))' }}
+            style={{ filter: 'drop-shadow(0 0 6px rgba(201,168,76,0.2))' }}
             draggable={false}
           />
+
 
 
           {/* Listener count */}
