@@ -158,10 +158,18 @@ mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/radio90s')
   .then(() => {
     console.log('✅  MongoDB connected');
+    const keyExists = !!process.env.YOUTUBE_API_KEY;
+    const keyLength = process.env.YOUTUBE_API_KEY ? process.env.YOUTUBE_API_KEY.length : 0;
+    console.log(`YouTube API key configured: ${keyExists}`);
+    console.log(`YouTube API key length: ${keyLength}`);
     server.listen(PORT, '0.0.0.0', () => console.log(`🎵  90s Radio API & WebSockets running on port ${PORT}`));
   })
   .catch((err) => {
     console.error('❌  MongoDB connection error:', err.message);
+    const keyExists = !!process.env.YOUTUBE_API_KEY;
+    const keyLength = process.env.YOUTUBE_API_KEY ? process.env.YOUTUBE_API_KEY.length : 0;
+    console.log(`YouTube API key configured: ${keyExists}`);
+    console.log(`YouTube API key length: ${keyLength}`);
     // Start server even without DB (for development)
     server.listen(PORT, '0.0.0.0', () => console.log(`🎵  90s Radio API & WebSockets (no DB) running on port ${PORT}`));
   });
