@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ──────────────────────────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #121416;
+  color: #f1f3f5;
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #343a40;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #495057;
+}
+
+/* ── Utility ───────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(33, 37, 41, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(73, 80, 87, 0.3);
+}
+
+.stat-glow {
+  box-shadow: 0 0 40px -8px rgba(212, 140, 54, 0.15);
+}
+
+/* ── Sidebar active link ───────────────────────────────────────── */
+.nav-link-active {
+  background: linear-gradient(90deg, rgba(212, 140, 54, 0.15) 0%, transparent 100%);
+  border-left: 3px solid #d48c36;
+}
