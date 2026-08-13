@@ -1,9 +1,10 @@
 // src/hooks/useRadioPlayer.js
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useRadio } from '../context/RadioContext';
 import * as audioEngine from '../services/audioEngine';
 import { playbackManager } from '../services/playbackManager';
+import { useMediaSession } from './useMediaSession';
 
 let _preloadAudio = null;
 
@@ -15,6 +16,7 @@ export function useRadioPlayer() {
   const {
     currentTrack,
     currentTrackIndex,
+    currentStation,
     isPlaying,
     volume,
     isMuted,
@@ -25,9 +27,25 @@ export function useRadioPlayer() {
     setDuration,
     setLoading,
     nextTrack,
+    prevTrack,
     markTrackFailed,
     invalidateTracks,
   } = useRadio();
+
+  // Stable callbacks for Media Session handlers
+  const handlePlay  = useCallback(() => setPlaying(true),  [setPlaying]);
+  const handlePause = useCallback(() => setPlaying(false), [setPlaying]);
+
+  // Wire up Web Media Session API (lock-screen controls, background state)
+  useMediaSession({
+    currentTrack,
+    currentStation,
+    isPlaying,
+    onPlay:  handlePlay,
+    onPause: handlePause,
+    onNext:  nextTrack,
+    onPrev:  prevTrack,
+  });
 
   const lastLoadedTrackIdRef = useRef(null);
 

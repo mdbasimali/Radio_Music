@@ -46,7 +46,12 @@ class PlaybackManager {
     // HTML5 Audio element (singleton)
     this.audio = new Audio();
     this.audio.preload = 'auto';
+    // Required for iOS Safari to allow inline + background audio playback
+    this.audio.setAttribute('playsinline', '');
+    this.audio.setAttribute('webkit-playsinline', '');
+    this.audio.setAttribute('x-webkit-airplay', 'allow');
     this._setupAudioListeners();
+
 
     // YouTube state
     this.ytPlayer = null;
