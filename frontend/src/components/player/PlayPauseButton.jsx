@@ -36,9 +36,17 @@ export default function PlayPauseButton({ size = 'md', className = '' }) {
     <motion.button
       id="play-pause-btn"
       onClick={() => {
-        setUserInteracted();      // mark first real user interaction
-        setPlaying(!isPlaying);   // toggle immediately — UI responds right away
+        setUserInteracted();
+        try { audioEngine.initContext(); } catch (e) {}
+        if (!isPlaying) {
+          playbackManager.play();
+          setPlaying(true);
+        } else {
+          playbackManager.pause();
+          setPlaying(false);
+        }
       }}
+
       // Never disable the button for loading — user can always click
       className={`relative flex items-center justify-center rounded-full flex-shrink-0 transition-all duration-300 ${s.btn} ${className}`}
       style={{

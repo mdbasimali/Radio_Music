@@ -167,7 +167,11 @@ export function useRadioPlayer() {
       onEnded: () => {
         stateRef.current.nextTrack();
       },
-      onLoadStart: () => stateRef.current.setLoading(true),
+      onLoadStart: () => {
+        if (stateRef.current.hasUserInteracted && stateRef.current.isPlaying) {
+          stateRef.current.setLoading(true);
+        }
+      },
       onCanPlay: () => {
         stateRef.current.setLoading(false);
 
@@ -183,17 +187,24 @@ export function useRadioPlayer() {
           stateRef.current.clearRestoredState();
         }
       },
+      onStateChange: ({ isPlaying, isLoading }) => {
+        if (isPlaying !== undefined) {
+          stateRef.current.setPlaying(isPlaying);
+        }
+        if (isLoading !== undefined) {
+          stateRef.current.setLoading(isLoading);
+        }
+      },
       onError: (err) => {
         console.error('Playback error event:', err);
         stateRef.current.setLoading(false);
+        stateRef.current.setPlaying(false);
         
         if (stateRef.current.currentTrack) {
           stateRef.current.markTrackFailed(stateRef.current.currentTrack.id);
           setTimeout(() => {
             stateRef.current.nextTrack();
           }, 2000);
-        } else {
-          stateRef.current.setPlaying(false);
         }
       }
     });
@@ -204,13 +215,8 @@ export function useRadioPlayer() {
   }, []);
 
   // Track changed → load into audio engine.
-  // IMPORTANT: we only load after hasUserInteracted = true.
-  // This prevents any audio engine activity (loadstart, buffering, YouTube
-  // player initialization) from firing on initial page load before the
-  // user has explicitly clicked a station card or the Play button.
   useEffect(() => {
     if (!currentTrack) return;
-    if (!hasUserInteracted) return; // ← ROOT CAUSE FIX: no engine activity before user acts
     if (failedTrackIds.includes(currentTrack.id)) return;
 
     if (lastLoadedTrackIdRef.current !== currentTrack.id) {
@@ -219,7 +225,8 @@ export function useRadioPlayer() {
       playbackManager.load(currentTrack);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrackIndex, currentTrack?.id, hasUserInteracted]);
+  }, [currentTrackIndex, currentTrack?.id]);
+
 
   // Handle play/pause commands
   useEffect(() => {

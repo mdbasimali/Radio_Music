@@ -22,16 +22,22 @@ export default function StationCard({ station, index }) {
           : '0 6px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
       }}
       onClick={() => {
-        setUserInteracted(); // mark first real user interaction
+        setUserInteracted();
+        try { audioEngine.initContext(); } catch (e) {}
         if (isActive) {
-          // Toggle play/pause for the already-selected station
-          setPlaying(!isPlaying);
+          if (!isPlaying) {
+            playbackManager.play();
+            setPlaying(true);
+          } else {
+            playbackManager.pause();
+            setPlaying(false);
+          }
         } else {
-          // Select new station and immediately begin playback
           setStation(station);
           setPlaying(true);
         }
       }}
+
       whileHover={{ y: -2, border: '1px solid var(--theme-border-active, rgba(212, 140, 54, 0.5))' }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 10 }}

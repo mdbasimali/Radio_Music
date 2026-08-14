@@ -84,12 +84,28 @@ class PlaybackManager {
     });
     audio.addEventListener('ended', () => {
       if (this.providerType === 'direct') {
+        this.isPlaying = false;
+        this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
         this.callbacks.onEnded();
       }
     });
     audio.addEventListener('loadstart', () => {
-      if (this.providerType === 'direct') {
+      if (this.providerType === 'direct' && this.isPlaying) {
         this.callbacks.onLoadStart();
+      }
+    });
+    audio.addEventListener('playing', () => {
+      if (this.providerType === 'direct') {
+        this.isPlaying = true;
+        this.callbacks.onCanPlay();
+        this.callbacks.onStateChange?.({ isPlaying: true, isLoading: false });
+      }
+    });
+    audio.addEventListener('pause', () => {
+      if (this.providerType === 'direct') {
+        this.isPlaying = false;
+        this.callbacks.onCanPlay();
+        this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
       }
     });
     audio.addEventListener('canplay', () => {
@@ -99,10 +115,14 @@ class PlaybackManager {
     });
     audio.addEventListener('error', (e) => {
       if (this.providerType === 'direct') {
+        this.isPlaying = false;
+        this.callbacks.onCanPlay();
+        this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
         this.callbacks.onError(e);
       }
     });
   }
+
 
   // ── YouTube Container Management ───────────────────────────────
 
@@ -228,8 +248,7 @@ class PlaybackManager {
       return;
     }
 
-    this.callbacks.onLoadStart();
-    console.log('[YT] Loading video:', videoId);
+    console.log('[YT] Loading video:', videoId, 'isPlaying:', this.isPlaying);
 
     try {
       await loadYouTubeAPI();
@@ -247,9 +266,11 @@ class PlaybackManager {
       this._ytLoadedVideoId = videoId;
       this._applyYTVolume();
       if (this.isPlaying) {
-        this.ytPlayer.loadVideoById(videoId); // auto-plays
+        this.ytPlayer.loadVideoById(videoId);
       } else {
-        this.ytPlayer.cueVideoById(videoId);
+        if (typeof this.ytPlayer.cueVideoById === 'function') {
+          this.ytPlayer.cueVideoById(videoId);
+        }
         this.callbacks.onCanPlay();
       }
       return;
@@ -267,7 +288,7 @@ class PlaybackManager {
       width: '100%',
       videoId: videoId,
       playerVars: {
-        autoplay: 0, // we control play ourselves
+        autoplay: 0,
         controls: 0,
         disablekb: 1,
         fs: 0,
@@ -283,11 +304,18 @@ class PlaybackManager {
           this._applyYTVolume();
           this.callbacks.onCanPlay();
 
-          // If play was requested while we were initializing, start now
+          // Fulfill pending play if user clicked before onReady
           if (this.isPlaying || this._pendingPlay) {
             this._pendingPlay = false;
-            console.log('[YT] Fulfilling pending play');
-            this.ytPlayer.playVideo();
+            console.log('[YT] Fulfilling pending play in onReady');
+            try {
+              this.ytPlayer.playVideo();
+            } catch (e) {
+              console.error('[YT] Error calling playVideo on ready:', e);
+              this.callbacks.onError(e);
+            }
+          } else {
+            this.callbacks.onCanPlay();
           }
         },
         onStateChange: (event) => {
@@ -297,33 +325,53 @@ class PlaybackManager {
 
           switch (state) {
             case window.YT.PlayerState.PLAYING:
+              this.isPlaying = true;
               this.callbacks.onCanPlay();
               this.callbacks.onDurationChange(this.ytPlayer.getDuration());
+              this.callbacks.onStateChange?.({ isPlaying: true, isLoading: false });
               this._startTimeTracking();
               break;
+
             case window.YT.PlayerState.PAUSED:
+              this.isPlaying = false;
               this._stopTimeTracking();
-              // Don't call setPlaying(false) here — that would cause a loop.
-              // The React side controls isPlaying; we only report time/duration/ended.
+              this.callbacks.onCanPlay();
+              this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
               break;
+
             case window.YT.PlayerState.ENDED:
+              this.isPlaying = false;
               this._stopTimeTracking();
+              this.callbacks.onCanPlay();
+              this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
               this.callbacks.onEnded();
               break;
+
             case window.YT.PlayerState.BUFFERING:
-              this.callbacks.onLoadStart();
+              if (this.isPlaying || this._pendingPlay) {
+                this.callbacks.onLoadStart();
+              }
               break;
-            // CUED and UNSTARTED are informational — no action needed
+
+            case window.YT.PlayerState.CUED:
+            case window.YT.PlayerState.UNSTARTED:
+              this.isPlaying = false;
+              this.callbacks.onCanPlay();
+              this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+              break;
           }
         },
         onError: (event) => {
           console.error('[YT] Error code:', event.data);
-          // YT error codes: 2=invalid param, 5=HTML5 error, 100=not found, 101/150=not embeddable
+          this.isPlaying = false;
+          this.callbacks.onCanPlay();
+          this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
           this.callbacks.onError(new Error(`YouTube error code: ${event.data}`));
         }
       }
     });
   }
+
 
   // ── Volume Helper for YouTube ──────────────────────────────────
 
