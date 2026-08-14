@@ -1,7 +1,10 @@
 // src/services/api.js
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5001/api';
+let BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5001/api';
+if (BASE_URL && !BASE_URL.endsWith('/api') && !BASE_URL.endsWith('/api/')) {
+  BASE_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
+}
 
 const api = axios.create({
   baseURL: BASE_URL,
