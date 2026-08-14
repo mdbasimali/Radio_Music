@@ -1,10 +1,17 @@
 // src/components/player/PlayPauseButton.jsx
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause } from 'lucide-react';
 import { useRadio } from '../../context/RadioContext';
 
 export default function PlayPauseButton({ size = 'md', className = '' }) {
-  const { isPlaying, isLoading, hasUserInteracted, setPlaying, setUserInteracted, currentStation } = useRadio();
+  const {
+    isPlaying,
+    isLoading,
+    hasUserInteracted,
+    setPlaying,
+    setUserInteracted,
+    currentStation,
+  } = useRadio();
 
   const sizes = {
     sm: { btn: 'w-9 h-9', icon: 16 },
@@ -21,18 +28,18 @@ export default function PlayPauseButton({ size = 'md', className = '' }) {
     ? `0 0 20px ${currentStation?.color || 'var(--theme-glow, rgba(212,140,54,0.4))'}`
     : '0 8px 20px rgba(0, 0, 0, 0.3)';
 
-  // Only show the loading spinner when the user has actually requested
-  // playback AND audio is loading. Never spin on initial page load.
-  const showSpinner = isLoading && hasUserInteracted;
+  // Show subtle loading ring ONLY when genuinely loading after user interaction.
+  // This never replaces the Play/Pause icon — it's a separate visual layer.
+  const showLoadingRing = isLoading && hasUserInteracted;
 
   return (
     <motion.button
       id="play-pause-btn"
       onClick={() => {
-        setUserInteracted();   // mark first explicit interaction
-        setPlaying(!isPlaying);
+        setUserInteracted();      // mark first real user interaction
+        setPlaying(!isPlaying);   // toggle immediately — UI responds right away
       }}
-      disabled={showSpinner}
+      // Never disable the button for loading — user can always click
       className={`relative flex items-center justify-center rounded-full flex-shrink-0 transition-all duration-300 ${s.btn} ${className}`}
       style={{
         background: bgStyle,
@@ -43,32 +50,45 @@ export default function PlayPauseButton({ size = 'md', className = '' }) {
       whileTap={{ scale: 0.94 }}
       aria-label={isPlaying ? 'Pause' : 'Play'}
     >
-      {/* Liquid glass inner highlight arc — refraction shimmer */}
+      {/* Liquid glass inner highlight arc */}
       <div
         className="absolute inset-0 rounded-full pointer-events-none"
         style={{
           background: 'linear-gradient(160deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 45%, transparent 70%)',
         }}
       />
-      {showSpinner ? (
-        <motion.div
-          className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-        />
-      ) : (
-        <motion.div
-          key={isPlaying ? 'pause' : 'play'}
-          initial={{ scale: 0.7, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.15 }}
-        >
-          {isPlaying
-            ? <Pause size={s.icon} fill="#0a0608" color="#0a0608" />
-            : <Play  size={s.icon} fill="#0a0608" color="#0a0608" className="ml-0.5" />
-          }
-        </motion.div>
-      )}
+
+      {/* Subtle loading ring — sits BEHIND the icon, never replaces it */}
+      <AnimatePresence>
+        {showLoadingRing && (
+          <motion.div
+            className="absolute inset-0 rounded-full pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              border: '2px solid transparent',
+              borderTopColor: 'rgba(255,255,255,0.5)',
+              animation: 'spin 1s linear infinite',
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Main icon — ALWAYS Play or Pause, never replaced by spinner */}
+      <motion.div
+        key={isPlaying ? 'pause' : 'play'}
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.12 }}
+        style={{ position: 'relative', zIndex: 1 }}
+      >
+        {isPlaying
+          ? <Pause size={s.icon} fill="#0a0608" color="#0a0608" />
+          : <Play  size={s.icon} fill="#0a0608" color="#0a0608" className="ml-0.5" />
+        }
+      </motion.div>
     </motion.button>
   );
 }

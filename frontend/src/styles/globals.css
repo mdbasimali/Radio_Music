@@ -113,6 +113,11 @@ body {
   100% { transform: translateY(100vh); opacity: 0; }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ─── Vintage Radio dial markings ────────────────────────────── */
 .radio-dial-mark {
   width: 1px;
