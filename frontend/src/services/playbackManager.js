@@ -53,6 +53,12 @@ class PlaybackManager {
     this.audio.setAttribute('x-webkit-airplay', 'allow');
     this._setupAudioListeners();
 
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        console.log("[AUDIO] visibility", document.visibilityState);
+      });
+    }
+
     // YouTube state
     this.ytPlayer = null;
     this.ytReady = false;
@@ -83,6 +89,7 @@ class PlaybackManager {
       }
     });
     audio.addEventListener('ended', () => {
+      console.log("[AUDIO] ended");
       if (this.providerType === 'direct') {
         this._isChangingTrack = true;
         if (!this.playbackIntent) {
@@ -99,6 +106,7 @@ class PlaybackManager {
       }
     });
     audio.addEventListener('playing', () => {
+      console.log("[AUDIO] playing");
       if (this.providerType === 'direct') {
         this.isPlaying = true;
         this.playbackIntent = true;
@@ -107,14 +115,20 @@ class PlaybackManager {
       }
     });
     audio.addEventListener('pause', () => {
+      console.log("[AUDIO] paused");
       if (this.providerType === 'direct') {
         if (this._isChangingTrack && this.playbackIntent) {
           return; // Ignore transient pause during track swap
         }
-        this.isPlaying = false;
-        this.playbackIntent = false;
-        this.callbacks.onCanPlay();
-        this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+        // Only transition to pause state if user actually intended to pause.
+        // OS/system-induced pauses in background will keep intent/playing state active.
+        if (!this.playbackIntent) {
+          this.isPlaying = false;
+          this.callbacks.onCanPlay();
+          this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+        } else {
+          console.log('[AUDIO] System/OS paused the audio (playback intent remains active)');
+        }
       }
     });
     audio.addEventListener('canplay', () => {
@@ -427,7 +441,11 @@ class PlaybackManager {
 
   play() {
     this.isPlaying = true;
+    this.playbackIntent = true;
     this._pendingPlay = false;
+    if (this.providerType === 'direct') {
+      console.log("[AUDIO] play", this.audio.src);
+    }
     console.log('[PM] play() provider:', this.providerType);
 
     if (this.providerType === 'youtube') {
@@ -447,7 +465,11 @@ class PlaybackManager {
 
   pause() {
     this.isPlaying = false;
+    this.playbackIntent = false;
     this._pendingPlay = false;
+    if (this.providerType === 'direct') {
+      console.log("[AUDIO] pause", this.audio.src);
+    }
     console.log('[PM] pause() provider:', this.providerType);
 
     if (this.providerType === 'youtube') {
