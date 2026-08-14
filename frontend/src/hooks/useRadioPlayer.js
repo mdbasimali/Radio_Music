@@ -25,6 +25,7 @@ export function useRadioPlayer() {
     queue,
     failedTrackIds,
     restoredState,
+    hasUserInteracted,
     setPlaying,
     setCurrentTime,
     setDuration,
@@ -82,6 +83,7 @@ export function useRadioPlayer() {
       isMuted,
       currentTime,
       restoredState,
+      hasUserInteracted,
       nextTrack,
       markTrackFailed,
       setPlaying,
@@ -201,9 +203,14 @@ export function useRadioPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Track changed → change source
+  // Track changed → load into audio engine.
+  // IMPORTANT: we only load after hasUserInteracted = true.
+  // This prevents any audio engine activity (loadstart, buffering, YouTube
+  // player initialization) from firing on initial page load before the
+  // user has explicitly clicked a station card or the Play button.
   useEffect(() => {
     if (!currentTrack) return;
+    if (!hasUserInteracted) return; // ← ROOT CAUSE FIX: no engine activity before user acts
     if (failedTrackIds.includes(currentTrack.id)) return;
 
     if (lastLoadedTrackIdRef.current !== currentTrack.id) {
@@ -212,7 +219,7 @@ export function useRadioPlayer() {
       playbackManager.load(currentTrack);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrackIndex, currentTrack?.id]);
+  }, [currentTrackIndex, currentTrack?.id, hasUserInteracted]);
 
   // Handle play/pause commands
   useEffect(() => {

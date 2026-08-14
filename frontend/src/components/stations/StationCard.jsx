@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useRadio } from '../../context/RadioContext';
 
 export default function StationCard({ station, index }) {
-  const { currentStation, setStation, isPlaying, setPlaying } = useRadio();
+  const { currentStation, setStation, isPlaying, setPlaying, setUserInteracted } = useRadio();
   const isActive = currentStation?.id === station.id;
 
   return (
@@ -22,11 +22,12 @@ export default function StationCard({ station, index }) {
           : '0 6px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
       }}
       onClick={() => {
+        setUserInteracted(); // mark first real user interaction
         if (isActive) {
           // Toggle play/pause for the already-selected station
           setPlaying(!isPlaying);
         } else {
-          // Select the new station and immediately begin playback
+          // Select new station and immediately begin playback
           setStation(station);
           setPlaying(true);
         }

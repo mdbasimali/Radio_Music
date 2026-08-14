@@ -4,7 +4,7 @@ import { Play, Pause } from 'lucide-react';
 import { useRadio } from '../../context/RadioContext';
 
 export default function PlayPauseButton({ size = 'md', className = '' }) {
-  const { isPlaying, isLoading, setPlaying, currentStation } = useRadio();
+  const { isPlaying, isLoading, hasUserInteracted, setPlaying, setUserInteracted, currentStation } = useRadio();
 
   const sizes = {
     sm: { btn: 'w-9 h-9', icon: 16 },
@@ -21,11 +21,18 @@ export default function PlayPauseButton({ size = 'md', className = '' }) {
     ? `0 0 20px ${currentStation?.color || 'var(--theme-glow, rgba(212,140,54,0.4))'}`
     : '0 8px 20px rgba(0, 0, 0, 0.3)';
 
+  // Only show the loading spinner when the user has actually requested
+  // playback AND audio is loading. Never spin on initial page load.
+  const showSpinner = isLoading && hasUserInteracted;
+
   return (
     <motion.button
       id="play-pause-btn"
-      onClick={() => setPlaying(!isPlaying)}
-      disabled={isLoading}
+      onClick={() => {
+        setUserInteracted();   // mark first explicit interaction
+        setPlaying(!isPlaying);
+      }}
+      disabled={showSpinner}
       className={`relative flex items-center justify-center rounded-full flex-shrink-0 transition-all duration-300 ${s.btn} ${className}`}
       style={{
         background: bgStyle,
@@ -43,7 +50,7 @@ export default function PlayPauseButton({ size = 'md', className = '' }) {
           background: 'linear-gradient(160deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 45%, transparent 70%)',
         }}
       />
-      {isLoading ? (
+      {showSpinner ? (
         <motion.div
           className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full"
           animate={{ rotate: 360 }}

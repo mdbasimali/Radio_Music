@@ -99,7 +99,10 @@ const initialState = {
   isLoading: false,
   isApiError: false,
   failedTrackIds: [],
-  restoredState: null, // Holds restored position & target track ID on startup
+  restoredState: null,
+  // Tracks whether the user has explicitly interacted (clicked a card / pressed Play).
+  // Until true, ALL loading/playing animations stay hidden.
+  hasUserInteracted: false,
 };
 
 function radioReducer(state, action) {
@@ -191,6 +194,8 @@ function radioReducer(state, action) {
       };
     case 'SET_PLAYING':
       return { ...state, isPlaying: action.payload };
+    case 'SET_USER_INTERACTED':
+      return { ...state, hasUserInteracted: true };
     case 'SET_VOLUME':
       setLocalStorage('radio_volume', action.payload);
       return { ...state, volume: action.payload, isMuted: action.payload === 0 };
@@ -362,6 +367,7 @@ export function RadioProvider({ children }) {
   const clearQueue = useCallback(() => dispatch({ type: 'CLEAR_QUEUE' }), []);
   const markTrackFailed = useCallback((id) => dispatch({ type: 'MARK_TRACK_FAILED', payload: id }), []);
   const clearRestoredState = useCallback(() => dispatch({ type: 'CLEAR_RESTORED_STATE' }), []);
+  const setUserInteracted = useCallback(() => dispatch({ type: 'SET_USER_INTERACTED' }), []);
 
   // Fetch stations on initial load
   useEffect(() => {
@@ -425,6 +431,8 @@ export function RadioProvider({ children }) {
         markTrackFailed,
         invalidateTracks,
         clearRestoredState,
+        setUserInteracted,
+
       }}
     >
       {children}
