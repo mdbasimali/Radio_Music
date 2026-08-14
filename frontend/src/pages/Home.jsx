@@ -15,7 +15,26 @@ export default function Home() {
   const { listenerCount, isConnected } = useListenerCount();
 
   return (
-    <main className="min-h-screen flex flex-col justify-between relative z-10 select-none pb-28 md:pb-32">
+    <main
+      aria-label="90s Gaana – Retro Indian Music Radio"
+      className="min-h-screen flex flex-col justify-between relative z-10 select-none pb-28 md:pb-32"
+    >
+      {/* Visually hidden SEO description — do not remove */}
+      <p
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        90s Gaana is an online retro radio playing classic 90s Hindi songs, 90s Bengali songs and 90s Bhojpuri songs. Rediscover nostalgic music from the golden era of Indian cinema.
+      </p>
       {/* Top Header */}
       <header className="w-full flex items-center justify-between px-6 py-4">
         {/* Left: Wordmark */}
