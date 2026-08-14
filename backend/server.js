@@ -17,7 +17,10 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Define allowed CORS origins
-const allowedOrigins = [];
+const allowedOrigins = [
+  'https://90sgaana.in',
+  'https://www.90sgaana.in'
+];
 if (process.env.FRONTEND_URL) {
   allowedOrigins.push(...process.env.FRONTEND_URL.split(',').map(o => o.trim()));
 }
@@ -25,16 +28,14 @@ if (process.env.ADMIN_URL) {
   allowedOrigins.push(...process.env.ADMIN_URL.split(',').map(o => o.trim()));
 }
 // Default development origins fallback
-if (allowedOrigins.length === 0) {
+if (allowedOrigins.length === 2) { // only if no env variables were added
   allowedOrigins.push(
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
     'http://localhost:5176',
     'http://localhost:5177',
-    'http://localhost:5001',
-    "https://90sgaana.in",
-   "https://www.90sgaana.in"
+    'http://localhost:5001'
   );
 }
 
