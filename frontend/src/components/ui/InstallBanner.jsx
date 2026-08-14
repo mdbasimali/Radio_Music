@@ -9,20 +9,31 @@ export default function InstallBanner({ show, isIOS, onInstall, onDismiss }) {
   return (
     <AnimatePresence>
       {show && (
-        <motion.div
-          initial={{ y: 120, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 120, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+        /* Static centering wrapper — never touched by Framer Motion */
+        <div
           style={{
             position: 'fixed',
             bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
             zIndex: 9999,
-            width: 'min(92vw, 380px)',
+            pointerEvents: 'none',
           }}
         >
+          {/* Motion div only handles y-slide — no transform conflict */}
+          <motion.div
+            initial={{ y: 120, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 120, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            style={{
+              width: 'min(92vw, 380px)',
+              pointerEvents: 'auto',
+            }}
+          >
+
           {/* Card */}
           <div
             style={{
@@ -159,7 +170,9 @@ export default function InstallBanner({ show, isIOS, onInstall, onDismiss }) {
             }}
           />
         </motion.div>
+        </div>
       )}
     </AnimatePresence>
+
   );
 }
