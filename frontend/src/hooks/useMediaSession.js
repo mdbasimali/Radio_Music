@@ -53,24 +53,26 @@ function buildArtwork(track) {
  * @param {function}    params.onNext        - Calls nextTrack()
  * @param {function}    params.onPrev        - Calls prevTrack()
  */
-export function useMediaSession({ currentTrack, currentStation, isPlaying, onPlay, onPause, onNext, onPrev }) {
+export function useMediaSession({ currentTrack, currentStation, isPlaying, isLoading, currentTime, duration, onPlay, onPause, onNext, onPrev }) {
   // Keep a ref to always-fresh handlers so Media Session closures never go stale
-  const handlersRef = useRef({ onPlay, onPause, onNext, onPrev });
+  const handlersRef = useRef({ onPlay, onPause, onNext, onPrev, currentTrack });
   useEffect(() => {
-    handlersRef.current = { onPlay, onPause, onNext, onPrev };
-  }, [onPlay, onPause, onNext, onPrev]);
+    handlersRef.current = { onPlay, onPause, onNext, onPrev, currentTrack };
+  }, [onPlay, onPause, onNext, onPrev, currentTrack]);
+
+  const isDirect = currentTrack?.provider === 'direct';
 
   // ── Register action handlers (once, on mount) ──────────────────
   useEffect(() => {
     if (!SUPPORTED) return;
 
     const actions = [
-      ['play',          () => handlersRef.current.onPlay()],
-      ['pause',         () => handlersRef.current.onPause()],
-      ['nexttrack',     () => handlersRef.current.onNext()],
-      ['previoustrack', () => handlersRef.current.onPrev()],
+      ['play',          () => { if (handlersRef.current.currentTrack?.provider === 'direct') handlersRef.current.onPlay(); }],
+      ['pause',         () => { if (handlersRef.current.currentTrack?.provider === 'direct') handlersRef.current.onPause(); }],
+      ['nexttrack',     () => { if (handlersRef.current.currentTrack?.provider === 'direct') handlersRef.current.onNext(); }],
+      ['previoustrack', () => { if (handlersRef.current.currentTrack?.provider === 'direct') handlersRef.current.onPrev(); }],
       // stop mirrors pause for our radio use-case
-      ['stop',          () => handlersRef.current.onPause()],
+      ['stop',          () => { if (handlersRef.current.currentTrack?.provider === 'direct') handlersRef.current.onPause(); }],
     ];
 
     for (const [action, handler] of actions) {
@@ -94,6 +96,14 @@ export function useMediaSession({ currentTrack, currentStation, isPlaying, onPla
   // ── Update metadata whenever track changes ─────────────────────
   useEffect(() => {
     if (!SUPPORTED) return;
+
+    if (!isDirect) {
+      try {
+        navigator.mediaSession.metadata = null;
+      } catch (e) {}
+      return;
+    }
+
     if (!currentTrack) return;
 
     try {
@@ -106,13 +116,50 @@ export function useMediaSession({ currentTrack, currentStation, isPlaying, onPla
     } catch (e) {
       console.warn('[MediaSession] Failed to set metadata:', e);
     }
-  }, [currentTrack?.id, currentStation?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentTrack?.id, currentStation?.id, isDirect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Sync playback state ────────────────────────────────────────
   useEffect(() => {
     if (!SUPPORTED) return;
+
+    if (!isDirect) {
+      try {
+        navigator.mediaSession.playbackState = 'none';
+      } catch (e) {}
+      return;
+    }
+
     try {
-      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+      if (isLoading) {
+        navigator.mediaSession.playbackState = 'paused';
+      } else {
+        navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+      }
     } catch (e) { /* ignore */ }
-  }, [isPlaying]);
+  }, [isPlaying, isLoading, isDirect]);
+
+  // ── Sync position state ────────────────────────────────────────
+  useEffect(() => {
+    if (!SUPPORTED || !isDirect || !navigator.mediaSession.setPositionState) return;
+
+    if (
+      typeof duration === 'number' &&
+      isFinite(duration) &&
+      duration > 0 &&
+      typeof currentTime === 'number' &&
+      isFinite(currentTime) &&
+      currentTime >= 0 &&
+      currentTime <= duration
+    ) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: duration,
+          playbackRate: 1.0,
+          position: currentTime,
+        });
+      } catch (e) {
+        console.warn('[MediaSession] Failed to set position state:', e);
+      }
+    }
+  }, [currentTime, duration, isDirect]);
 }
