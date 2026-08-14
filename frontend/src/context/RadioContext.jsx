@@ -105,17 +105,14 @@ const initialState = {
 function radioReducer(state, action) {
   switch (action.type) {
     case 'INIT_STATIONS': {
-      const savedState = getSavedPlaybackState();
-      const savedStationId = savedState?.stationId || localStorage.getItem('radio_lastStationId');
-      
-      const currentStation = savedStationId
-        ? action.payload.find((s) => s.id === savedStationId) || action.payload[0] || null
-        : action.payload[0] || null;
-
+      // Do NOT auto-select or restore a station on initial load.
+      // Stations are loaded for display only; the user must explicitly click
+      // a card to begin playback. Restoring a saved station without user
+      // interaction causes the loading spinner to spin on first visit.
       return {
         ...state,
         stations: action.payload,
-        currentStation,
+        currentStation: null,
         isApiError: false,
       };
     }
@@ -126,17 +123,20 @@ function radioReducer(state, action) {
       let targetIndex = 0;
       let restoredStatePayload = null;
 
-      // Check if saved track exists in fetched station queue
+      // Check if saved track exists in fetched station queue.
+      // We restore the POSITION only (currentTime), never isPlaying.
+      // Autoplay on restore is intentionally disabled — the user must
+      // press Play after returning to the site.
       if (savedState && savedState.trackId) {
         const foundIdx = mappedQueue.findIndex(t => t.id === savedState.trackId || t.providerId === savedState.providerId);
         if (foundIdx !== -1) {
           targetIndex = foundIdx;
           restoredStatePayload = {
             currentTime: savedState.currentTime || 0,
-            isPlaying: savedState.isPlaying || false,
+            isPlaying: false, // NEVER autoplay on restore — user must press Play
             trackId: savedState.trackId,
           };
-          console.log('[RadioContext] Restoring saved track:', mappedQueue[targetIndex].title, 'at time:', savedState.currentTime);
+          console.log('[RadioContext] Restoring saved track position (no autoplay):', mappedQueue[targetIndex].title, 'at time:', savedState.currentTime);
         } else {
           // Saved track no longer valid in current station queue
           clearSavedPlaybackState();
@@ -318,7 +318,9 @@ function radioReducer(state, action) {
           queue: filteredQueue,
           currentTrackIndex: filteredQueue.length > 0 ? newIdx % filteredQueue.length : 0,
           currentTime: 0,
-          isPlaying: filteredQueue.length > 0,
+          // Keep isPlaying as-is; don't force it to true — that caused autoplay.
+          // The audio engine will naturally advance to the next track if already playing.
+          isPlaying: state.isPlaying && filteredQueue.length > 0,
           restoredState: null,
         };
       }

@@ -222,7 +222,12 @@ export function useRadioPlayer() {
         playbackManager.play();
       }
     } else {
-      playbackManager.pause();
+      // Only pause if something has actually been loaded — avoids
+      // calling pause() on the audio engine before the user has
+      // interacted with the page at all.
+      if (lastLoadedTrackIdRef.current !== null) {
+        playbackManager.pause();
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);

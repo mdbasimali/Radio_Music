@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useRadio } from '../../context/RadioContext';
 
 export default function StationCard({ station, index }) {
-  const { currentStation, setStation, isPlaying } = useRadio();
+  const { currentStation, setStation, isPlaying, setPlaying } = useRadio();
   const isActive = currentStation?.id === station.id;
 
   return (
@@ -21,7 +21,16 @@ export default function StationCard({ station, index }) {
           ? '0 10px 28px rgba(0, 0, 0, 0.7), 0 0 16px var(--theme-glow, rgba(212, 140, 54, 0.2)), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
           : '0 6px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
       }}
-      onClick={() => setStation(station)}
+      onClick={() => {
+        if (isActive) {
+          // Toggle play/pause for the already-selected station
+          setPlaying(!isPlaying);
+        } else {
+          // Select the new station and immediately begin playback
+          setStation(station);
+          setPlaying(true);
+        }
+      }}
       whileHover={{ y: -2, border: '1px solid var(--theme-border-active, rgba(212, 140, 54, 0.5))' }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 10 }}
