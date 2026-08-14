@@ -52,9 +52,10 @@ export default function ProgressBar({ className = '', compact = false, showTime 
           step={0.5}
           value={currentTime}
           onChange={handleSeek}
-          className="range-amber relative z-10 w-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+          className="range-amber relative z-10 w-full opacity-60 md:opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer touch-action-manipulation"
           aria-label="Seek position"
         />
+
       </div>
 
       {(showTime || !compact) && (

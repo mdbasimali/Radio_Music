@@ -64,45 +64,58 @@ export default function MobilePlayer() {
         />
 
         <div
-          className="p-3 relative z-10 flex items-center justify-between gap-3"
+          className="p-3 relative z-10 flex flex-col gap-2 cursor-pointer"
           onClick={() => setExpanded(true)}
         >
-          {/* Left: Album art & track metadata */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <AlbumArt size="sm" />
-            <NowPlaying compact />
+          {/* Top row: Track info & controls */}
+          <div className="flex items-center justify-between gap-2.5">
+            {/* Left: Album art & track metadata */}
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <AlbumArt size="sm" />
+              <NowPlaying compact />
+            </div>
+
+            {/* Right: Controls [Prev] [PlayPause] [Next] */}
+            <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+              <motion.button
+                onClick={handlePrev}
+                className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: 'var(--theme-text, #ebdcb9)',
+                }}
+                whileTap={{ scale: 0.95 }}
+                aria-label="Previous track"
+              >
+                <SkipBack size={12} />
+              </motion.button>
+
+              <PlayPauseButton size="sm" />
+
+              <motion.button
+                onClick={handleNext}
+                className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: 'var(--theme-text, #ebdcb9)',
+                }}
+                whileTap={{ scale: 0.95 }}
+                aria-label="Next track"
+              >
+                <SkipForward size={12} />
+              </motion.button>
+            </div>
           </div>
 
-          {/* Right: Controls */}
-          <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-            <motion.button
-              onClick={handleNext}
-              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
-              style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: 'var(--theme-text, #ebdcb9)',
-              }}
-              whileTap={{ scale: 0.95 }}
-              aria-label="Next track"
-            >
-              <SkipForward size={14} />
-            </motion.button>
-
-            <PlayPauseButton size="sm" />
-
-            <motion.button
-              onClick={nextTrack}
-              className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--theme-text, #ebdcb9)' }}
-              whileTap={{ scale: 0.9 }}
-              aria-label="Next"
-            >
-              <SkipForward size={12} fill="currentColor" />
-            </motion.button>
+          {/* Progress & Time Track (Elapsed Time ... Progress Bar ... Total Duration) */}
+          <div className="w-full px-0.5" onClick={(e) => e.stopPropagation()}>
+            <ProgressBar compact showTime />
           </div>
         </div>
       </motion.div>
+
 
       {/* Expanded bottom sheet details */}
       <AnimatePresence>
