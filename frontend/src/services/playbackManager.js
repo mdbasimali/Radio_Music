@@ -28,6 +28,8 @@ class PlaybackManager {
     this.currentTrack = null;
     this.providerType = null; // 'direct' or 'youtube' — null until first load
     this.isPlaying = false;
+    this.playbackIntent = false; // Tracks explicit user intent (true = playing, false = paused)
+    this._isChangingTrack = false; // Tracks whether a track swap is actively in progress
     this.volume = 0.8;
     this.isMuted = false;
 
@@ -46,18 +48,16 @@ class PlaybackManager {
     // HTML5 Audio element (singleton)
     this.audio = new Audio();
     this.audio.preload = 'auto';
-    // Required for iOS Safari to allow inline + background audio playback
     this.audio.setAttribute('playsinline', '');
     this.audio.setAttribute('webkit-playsinline', '');
     this.audio.setAttribute('x-webkit-airplay', 'allow');
     this._setupAudioListeners();
 
-
     // YouTube state
     this.ytPlayer = null;
     this.ytReady = false;
     this.ytInterval = null;
-    this._ytLoadedVideoId = null; // track which video ID is currently loaded
+    this._ytLoadedVideoId = null;
   }
 
   setCallbacks(cbs) {
@@ -85,31 +85,35 @@ class PlaybackManager {
     audio.addEventListener('ended', () => {
       if (this.providerType === 'direct') {
         this.isPlaying = false;
+        this.playbackIntent = false;
         this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
         this.callbacks.onEnded();
       }
     });
     audio.addEventListener('loadstart', () => {
-      if (this.providerType === 'direct' && this.isPlaying) {
+      if (this.providerType === 'direct' && this.playbackIntent) {
         this.callbacks.onLoadStart();
       }
     });
     audio.addEventListener('playing', () => {
       if (this.providerType === 'direct') {
         this.isPlaying = true;
+        this.playbackIntent = true;
         this.callbacks.onCanPlay();
         this.callbacks.onStateChange?.({ isPlaying: true, isLoading: false });
       }
     });
     audio.addEventListener('pause', () => {
       if (this.providerType === 'direct') {
-        if (!this.isPlaying) {
-          this.callbacks.onCanPlay();
-          this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+        if (this._isChangingTrack && this.playbackIntent) {
+          return; // Ignore transient pause during track swap
         }
+        this.isPlaying = false;
+        this.playbackIntent = false;
+        this.callbacks.onCanPlay();
+        this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
       }
     });
-
     audio.addEventListener('canplay', () => {
       if (this.providerType === 'direct') {
         this.callbacks.onCanPlay();
@@ -118,13 +122,13 @@ class PlaybackManager {
     audio.addEventListener('error', (e) => {
       if (this.providerType === 'direct') {
         this.isPlaying = false;
+        this.playbackIntent = false;
         this.callbacks.onCanPlay();
         this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
         this.callbacks.onError(e);
       }
     });
   }
-
 
   // ── YouTube Container Management ───────────────────────────────
 
@@ -136,8 +140,6 @@ class PlaybackManager {
       document.body.appendChild(el);
     }
 
-    // Rather than fixed bottom-right video box, we render it out-of-view (1x1 pixel offscreen)
-    // to preserve audio playback while meeting technical IFrame embedding requirements.
     Object.assign(el.style, {
       position: 'absolute',
       width: '1px',
@@ -176,7 +178,7 @@ class PlaybackManager {
   _stopDirect() {
     this.audio.pause();
     this.audio.removeAttribute('src');
-    this.audio.load(); // reset to empty
+    this.audio.load();
   }
 
   _stopYouTube() {
@@ -194,8 +196,17 @@ class PlaybackManager {
     const nextProvider = track.provider || 'direct';
     this.currentTrack = track;
     this._pendingPlay = false;
+    this._isChangingTrack = true;
 
-    console.log('[PM] load()', { provider: nextProvider, providerId: track.providerId, url: track.url, prevProvider });
+    // Synchronize isPlaying with explicit playbackIntent
+    this.isPlaying = this.playbackIntent;
+
+    console.log('[PM] load()', {
+      provider: nextProvider,
+      providerId: track.providerId,
+      url: track.url,
+      playbackIntent: this.playbackIntent,
+    });
 
     // Stop the PREVIOUS provider cleanly before switching
     if (prevProvider === 'direct' && nextProvider === 'youtube') {
@@ -232,8 +243,7 @@ class PlaybackManager {
       this.audio.load();
     }
 
-    // If play state is already active, start immediately
-    if (this.isPlaying) {
+    if (this.playbackIntent) {
       this.audio.play().catch((err) => {
         this.callbacks.onError(err);
       });
@@ -250,7 +260,7 @@ class PlaybackManager {
       return;
     }
 
-    console.log('[YT] Loading video:', videoId, 'isPlaying:', this.isPlaying);
+    console.log('[YT] Loading video:', videoId, 'intent:', this.playbackIntent);
 
     try {
       await loadYouTubeAPI();
@@ -264,10 +274,10 @@ class PlaybackManager {
 
     // If we already have a ready YT player, just swap the video
     if (this.ytPlayer && this.ytReady && typeof this.ytPlayer.loadVideoById === 'function') {
-      console.log('[YT] Reusing existing player, loading video:', videoId);
+      console.log('[YT] Reusing existing player, loading video:', videoId, 'intent:', this.playbackIntent);
       this._ytLoadedVideoId = videoId;
       this._applyYTVolume();
-      if (this.isPlaying) {
+      if (this.playbackIntent) {
         this.ytPlayer.loadVideoById(videoId);
         try {
           this.ytPlayer.playVideo();
@@ -280,7 +290,6 @@ class PlaybackManager {
       }
       return;
     }
-
 
     // First time — create the player
     this.ytReady = false;
@@ -305,15 +314,14 @@ class PlaybackManager {
       },
       events: {
         onReady: (event) => {
-          console.log('[YT] onReady fired');
+          console.log('[YT] onReady fired, intent:', this.playbackIntent);
           this.ytReady = true;
           this._applyYTVolume();
           this.callbacks.onCanPlay();
 
-          // Fulfill pending play if user clicked before onReady
-          if (this.isPlaying || this._pendingPlay) {
+          if (this.playbackIntent || this._pendingPlay) {
             this._pendingPlay = false;
-            console.log('[YT] Fulfilling pending play in onReady');
+            console.log('[YT] Fulfilling playback in onReady');
             try {
               this.ytPlayer.playVideo();
             } catch (e) {
@@ -327,11 +335,13 @@ class PlaybackManager {
         onStateChange: (event) => {
           const state = event.data;
           const stateNames = { [-1]: 'UNSTARTED', 0: 'ENDED', 1: 'PLAYING', 2: 'PAUSED', 3: 'BUFFERING', 5: 'CUED' };
-          console.log('[YT] State:', stateNames[state] || state, 'isPlaying:', this.isPlaying);
+          console.log('[YT STATE]', stateNames[state] || state, 'intent:', this.playbackIntent, 'isChangingTrack:', this._isChangingTrack);
 
           switch (state) {
             case window.YT.PlayerState.PLAYING:
+              this._isChangingTrack = false;
               this.isPlaying = true;
+              this.playbackIntent = true;
               this.callbacks.onCanPlay();
               this.callbacks.onDurationChange(this.ytPlayer.getDuration());
               this.callbacks.onStateChange?.({ isPlaying: true, isLoading: false });
@@ -339,15 +349,22 @@ class PlaybackManager {
               break;
 
             case window.YT.PlayerState.PAUSED:
-              // Explicit user/browser pause
+              // Ignore transient PAUSED event during track swap if playback intent is active
+              if (this._isChangingTrack && this.playbackIntent) {
+                console.log('[YT STATE] Ignoring transient PAUSED during track change');
+                break;
+              }
               this.isPlaying = false;
+              this.playbackIntent = false;
               this._stopTimeTracking();
               this.callbacks.onCanPlay();
               this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
               break;
 
             case window.YT.PlayerState.ENDED:
+              this._isChangingTrack = false;
               this.isPlaying = false;
+              this.playbackIntent = false;
               this._stopTimeTracking();
               this.callbacks.onCanPlay();
               this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
@@ -355,26 +372,26 @@ class PlaybackManager {
               break;
 
             case window.YT.PlayerState.BUFFERING:
-              if (this.isPlaying || this._pendingPlay) {
+              if (this.playbackIntent || this._pendingPlay) {
                 this.callbacks.onLoadStart();
               }
               break;
 
             case window.YT.PlayerState.CUED:
             case window.YT.PlayerState.UNSTARTED:
-              // Transitional state during track change / cueing.
-              // Preserve existing isPlaying state: do NOT reset to false if playing!
               this.callbacks.onCanPlay();
-              if (!this.isPlaying) {
+              if (!this.playbackIntent) {
+                this.isPlaying = false;
                 this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
               }
               break;
           }
         },
-
         onError: (event) => {
           console.error('[YT] Error code:', event.data);
+          this._isChangingTrack = false;
           this.isPlaying = false;
+          this.playbackIntent = false;
           this.callbacks.onCanPlay();
           this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
           this.callbacks.onError(new Error(`YouTube error code: ${event.data}`));
@@ -382,6 +399,7 @@ class PlaybackManager {
       }
     });
   }
+
 
 
   // ── Volume Helper for YouTube ──────────────────────────────────
