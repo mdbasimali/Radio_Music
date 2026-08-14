@@ -103,11 +103,13 @@ class PlaybackManager {
     });
     audio.addEventListener('pause', () => {
       if (this.providerType === 'direct') {
-        this.isPlaying = false;
-        this.callbacks.onCanPlay();
-        this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+        if (!this.isPlaying) {
+          this.callbacks.onCanPlay();
+          this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+        }
       }
     });
+
     audio.addEventListener('canplay', () => {
       if (this.providerType === 'direct') {
         this.callbacks.onCanPlay();
@@ -321,7 +323,7 @@ class PlaybackManager {
         onStateChange: (event) => {
           const state = event.data;
           const stateNames = { [-1]: 'UNSTARTED', 0: 'ENDED', 1: 'PLAYING', 2: 'PAUSED', 3: 'BUFFERING', 5: 'CUED' };
-          console.log('[YT] State:', stateNames[state] || state);
+          console.log('[YT] State:', stateNames[state] || state, 'isPlaying:', this.isPlaying);
 
           switch (state) {
             case window.YT.PlayerState.PLAYING:
@@ -333,6 +335,7 @@ class PlaybackManager {
               break;
 
             case window.YT.PlayerState.PAUSED:
+              // Explicit user/browser pause
               this.isPlaying = false;
               this._stopTimeTracking();
               this.callbacks.onCanPlay();
@@ -355,12 +358,16 @@ class PlaybackManager {
 
             case window.YT.PlayerState.CUED:
             case window.YT.PlayerState.UNSTARTED:
-              this.isPlaying = false;
+              // Transitional state during track change / cueing.
+              // Preserve existing isPlaying state: do NOT reset to false if playing!
               this.callbacks.onCanPlay();
-              this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+              if (!this.isPlaying) {
+                this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+              }
               break;
           }
         },
+
         onError: (event) => {
           console.error('[YT] Error code:', event.data);
           this.isPlaying = false;
