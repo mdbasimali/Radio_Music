@@ -105,17 +105,23 @@ const initialState = {
 function radioReducer(state, action) {
   switch (action.type) {
     case 'INIT_STATIONS': {
-      // Do NOT auto-select or restore a station on initial load.
-      // Stations are loaded for display only; the user must explicitly click
-      // a card to begin playback. Restoring a saved station without user
-      // interaction causes the loading spinner to spin on first visit.
+      // Pre-select "Hindi 90s Classics" as the default station for display.
+      // This sets the active card visually but does NOT start playback.
+      // isPlaying remains false — the user must explicitly click the card or Play button.
+      const defaultStation =
+        action.payload.find((s) =>
+          s.name?.toLowerCase().includes('hindi') &&
+          s.name?.toLowerCase().includes('classic')
+        ) || action.payload[0] || null;
+
       return {
         ...state,
         stations: action.payload,
-        currentStation: null,
+        currentStation: defaultStation,
         isApiError: false,
       };
     }
+
     case 'SET_QUEUE': {
       const mappedQueue = action.payload.map(mapTrackToAudioSource);
       const savedState = getSavedPlaybackState();
