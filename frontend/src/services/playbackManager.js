@@ -84,12 +84,15 @@ class PlaybackManager {
     });
     audio.addEventListener('ended', () => {
       if (this.providerType === 'direct') {
-        this.isPlaying = false;
-        this.playbackIntent = false;
-        this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+        this._isChangingTrack = true;
+        if (!this.playbackIntent) {
+          this.isPlaying = false;
+          this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+        }
         this.callbacks.onEnded();
       }
     });
+
     audio.addEventListener('loadstart', () => {
       if (this.providerType === 'direct' && this.playbackIntent) {
         this.callbacks.onLoadStart();
@@ -362,14 +365,18 @@ class PlaybackManager {
               break;
 
             case window.YT.PlayerState.ENDED:
-              this._isChangingTrack = false;
-              this.isPlaying = false;
-              this.playbackIntent = false;
+              console.log('[TRACK ENDED] YouTube video ended naturally, intent:', this.playbackIntent);
+              this._isChangingTrack = true;
               this._stopTimeTracking();
               this.callbacks.onCanPlay();
-              this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+              // Preserve playbackIntent so natural END triggers auto-play for next track!
+              if (!this.playbackIntent) {
+                this.isPlaying = false;
+                this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
+              }
               this.callbacks.onEnded();
               break;
+
 
             case window.YT.PlayerState.BUFFERING:
               if (this.playbackIntent || this._pendingPlay) {
