@@ -74,9 +74,10 @@ app.use(express.json());
 const path = require('path');
 app.use('/audio', express.static(path.join(__dirname, 'public/audio'), {
   setHeaders: (res) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
   }
 }));
 

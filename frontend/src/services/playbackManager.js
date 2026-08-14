@@ -48,14 +48,40 @@ class PlaybackManager {
     // HTML5 Audio element (singleton)
     this.audio = new Audio();
     this.audio.preload = 'auto';
+    this.audio.crossOrigin = 'anonymous';
     this.audio.setAttribute('playsinline', '');
     this.audio.setAttribute('webkit-playsinline', '');
     this.audio.setAttribute('x-webkit-airplay', 'allow');
+
+    // Instrument audio pause with stack trace
+    const originalPause = this.audio.pause.bind(this.audio);
+    this.audio.pause = (...args) => {
+      console.trace("[AUDIO PAUSE CALLED]", {
+        src: this.audio.src,
+        paused: this.audio.paused,
+        visibilityState: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+        hidden: typeof document !== 'undefined' ? document.hidden : 'unknown'
+      });
+      return originalPause(...args);
+    };
+
+    // Instrument audio play
+    const originalPlay = this.audio.play.bind(this.audio);
+    this.audio.play = (...args) => {
+      console.log("[AUDIO PLAY CALLED]", {
+        src: this.audio.src,
+        paused: this.audio.paused,
+        visibilityState: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+        hidden: typeof document !== 'undefined' ? document.hidden : 'unknown'
+      });
+      return originalPlay(...args);
+    };
+
     this._setupAudioListeners();
 
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
-        console.log("[AUDIO] visibility", document.visibilityState);
+        console.log("[AUDIO] visibility", document.visibilityState, "hidden:", document.hidden);
       });
     }
 
@@ -78,6 +104,27 @@ class PlaybackManager {
 
   _setupAudioListeners() {
     const audio = this.audio;
+
+    // Comprehensive diagnostic media events logging
+    const debugEvents = [
+      'play', 'playing', 'pause', 'ended', 'waiting',
+      'stalled', 'error', 'abort', 'emptied', 'loadstart', 'canplay'
+    ];
+    debugEvents.forEach((evt) => {
+      audio.addEventListener(evt, () => {
+        console.log("[DIRECT AUDIO]", {
+          event: evt,
+          src: audio.src,
+          paused: audio.paused,
+          readyState: audio.readyState,
+          networkState: audio.networkState,
+          currentTime: audio.currentTime,
+          visibilityState: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+          hidden: typeof document !== 'undefined' ? document.hidden : 'unknown'
+        });
+      });
+    });
+
     audio.addEventListener('timeupdate', () => {
       if (this.providerType === 'direct') {
         this.callbacks.onTimeUpdate(audio.currentTime);
@@ -89,7 +136,6 @@ class PlaybackManager {
       }
     });
     audio.addEventListener('ended', () => {
-      console.log("[AUDIO] ended");
       if (this.providerType === 'direct') {
         this._isChangingTrack = true;
         if (!this.playbackIntent) {
@@ -106,7 +152,6 @@ class PlaybackManager {
       }
     });
     audio.addEventListener('playing', () => {
-      console.log("[AUDIO] playing");
       if (this.providerType === 'direct') {
         this.isPlaying = true;
         this.playbackIntent = true;
@@ -115,7 +160,6 @@ class PlaybackManager {
       }
     });
     audio.addEventListener('pause', () => {
-      console.log("[AUDIO] paused");
       if (this.providerType === 'direct') {
         if (this._isChangingTrack && this.playbackIntent) {
           return; // Ignore transient pause during track swap

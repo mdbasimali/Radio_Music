@@ -74,7 +74,10 @@ self.addEventListener('fetch', (event) => {
   // 2. Skip chrome-extension and non-http(s) schemes
   if (!url.protocol.startsWith('http')) return;
 
-  // 3. Check against never-cache list — these always go straight to network
+  // 3. Unconditionally bypass audio requests for native stream & Range support
+  if (request.destination === 'audio' || url.pathname.startsWith('/audio/')) return;
+
+  // 4. Check against never-cache list — these always go straight to network
   const shouldNeverCache = NEVER_CACHE.some(
     (pattern) => request.url.includes(pattern)
   );

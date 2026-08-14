@@ -7,8 +7,6 @@ import { playbackManager } from '../services/playbackManager';
 import { useMediaSession } from './useMediaSession';
 import { savePlaybackState } from '../services/playbackPersistence';
 
-let _preloadAudio = null;
-
 export function getAudio() {
   return playbackManager.getAudio();
 }
@@ -256,23 +254,6 @@ export function useRadioPlayer() {
     playbackManager.setVolume(volume);
     playbackManager.setMuted(isMuted);
   }, [volume, isMuted]);
-
-  // Preload next track's metadata
-  useEffect(() => {
-    if (!queue || queue.length <= 1) return;
-    const nextIdx = (currentTrackIndex + 1) % queue.length;
-    const nextTrackItem = queue[nextIdx];
-    
-    if (nextTrackItem && nextTrackItem.provider === 'direct' && nextTrackItem.url && !failedTrackIds.includes(nextTrackItem.id)) {
-      if (!_preloadAudio) {
-        _preloadAudio = new Audio();
-        _preloadAudio.crossOrigin = 'anonymous';
-      }
-      _preloadAudio.preload = 'metadata';
-      _preloadAudio.src = nextTrackItem.url;
-      _preloadAudio.load();
-    }
-  }, [currentTrackIndex, queue, failedTrackIds]);
 
   return { seek: seekAudio };
 }
