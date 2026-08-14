@@ -269,6 +269,9 @@ class PlaybackManager {
       this._applyYTVolume();
       if (this.isPlaying) {
         this.ytPlayer.loadVideoById(videoId);
+        try {
+          this.ytPlayer.playVideo();
+        } catch (e) {}
       } else {
         if (typeof this.ytPlayer.cueVideoById === 'function') {
           this.ytPlayer.cueVideoById(videoId);
@@ -277,6 +280,7 @@ class PlaybackManager {
       }
       return;
     }
+
 
     // First time — create the player
     this.ytReady = false;

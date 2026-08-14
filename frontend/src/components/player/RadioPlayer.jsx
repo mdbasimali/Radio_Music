@@ -8,9 +8,29 @@ import NowPlaying from './NowPlaying';
 import PlayPauseButton from './PlayPauseButton';
 import ProgressBar from './ProgressBar';
 import VolumeControl from './VolumeControl';
+import { playbackManager } from '../../services/playbackManager';
+import * as audioEngine from '../../services/audioEngine';
 
 export default function RadioPlayer() {
-  const { nextTrack, prevTrack, currentStation } = useRadio();
+  const { nextTrack, prevTrack, currentStation, isPlaying, setUserInteracted } = useRadio();
+
+  const handleNext = () => {
+    setUserInteracted();
+    try { audioEngine.initContext(); } catch (e) {}
+    nextTrack();
+    if (isPlaying) {
+      playbackManager.play();
+    }
+  };
+
+  const handlePrev = () => {
+    setUserInteracted();
+    try { audioEngine.initContext(); } catch (e) {}
+    prevTrack();
+    if (isPlaying) {
+      playbackManager.play();
+    }
+  };
 
   const glassAccent = currentStation?.color || 'var(--theme-accent, #d48c36)';
 
@@ -38,7 +58,7 @@ export default function RadioPlayer() {
       <div
         className="h-full w-full absolute inset-0 pointer-events-none rounded-[24px]"
         style={{
-          background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.025) 25%, transparent 60%)',
+          background: 'linear-gradient(165deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.03) 30%, transparent 60%)',
         }}
       />
 

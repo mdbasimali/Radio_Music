@@ -9,10 +9,32 @@ import NowPlaying from './NowPlaying';
 import PlayPauseButton from './PlayPauseButton';
 import ProgressBar from './ProgressBar';
 import VolumeControl from './VolumeControl';
+import { playbackManager } from '../../services/playbackManager';
+import * as audioEngine from '../../services/audioEngine';
 
 export default function MobilePlayer() {
-  const { nextTrack, prevTrack, currentStation } = useRadio();
+  const { nextTrack, prevTrack, currentStation, isPlaying, setUserInteracted } = useRadio();
   const [expanded, setExpanded] = useState(false);
+
+  const handleNext = (e) => {
+    e?.stopPropagation();
+    setUserInteracted();
+    try { audioEngine.initContext(); } catch (err) {}
+    nextTrack();
+    if (isPlaying) {
+      playbackManager.play();
+    }
+  };
+
+  const handlePrev = (e) => {
+    e?.stopPropagation();
+    setUserInteracted();
+    try { audioEngine.initContext(); } catch (err) {}
+    prevTrack();
+    if (isPlaying) {
+      playbackManager.play();
+    }
+  };
 
   const glassAccent = currentStation?.color || 'var(--theme-accent, #d48c36)';
 
@@ -41,34 +63,30 @@ export default function MobilePlayer() {
           }}
         />
 
-        {/* Reference Composition: [Artwork] [Song Info + Progress/Timing] [Prev Play Next] */}
         <div
-          className="flex items-center justify-between gap-2.5 p-2.5 cursor-pointer relative z-10"
+          className="p-3 relative z-10 flex items-center justify-between gap-3"
           onClick={() => setExpanded(true)}
         >
-          {/* Left: Album Artwork */}
-          <AlbumArt size={44} className="flex-shrink-0" />
-
-          {/* Middle: Title, Artist and Progress / Timing */}
-          <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
-            <NowPlaying compact className="w-full" />
-            
-            {/* Embedded Timing & Progress Bar */}
-            <div className="w-full" onClick={(e) => e.stopPropagation()}>
-              <ProgressBar compact showTime />
-            </div>
+          {/* Left: Album art & track metadata */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <AlbumArt size="sm" />
+            <NowPlaying compact />
           </div>
 
-          {/* Right: Controls [Previous] [Play/Pause] [Next] */}
-          <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          {/* Right: Controls */}
+          <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <motion.button
-              onClick={prevTrack}
-              className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--theme-text, #ebdcb9)' }}
-              whileTap={{ scale: 0.9 }}
-              aria-label="Previous"
+              onClick={handleNext}
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: 'var(--theme-text, #ebdcb9)',
+              }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Next track"
             >
-              <SkipBack size={12} fill="currentColor" />
+              <SkipForward size={14} />
             </motion.button>
 
             <PlayPauseButton size="sm" />
