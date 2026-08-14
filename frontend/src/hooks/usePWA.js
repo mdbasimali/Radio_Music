@@ -35,11 +35,23 @@ export function usePWA() {
         .register('/sw.js', { scope: '/' })
         .then((reg) => {
           console.log('[SW] Registered, scope:', reg.scope);
+          reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            if (installingWorker) {
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[SW] New version detected, reloading to update assets...');
+                  window.location.reload();
+                }
+              };
+            }
+          };
         })
         .catch((err) => {
           console.warn('[SW] Registration failed:', err);
         });
     }
+
 
     // ── Capture beforeinstallprompt (Chrome/Edge/Android) ───────
     const handleBeforeInstallPrompt = (e) => {

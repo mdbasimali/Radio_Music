@@ -2,7 +2,7 @@
 // Strategy: Cache-first for static assets, network-only for everything dynamic.
 // NEVER caches: API calls, Socket.IO, YouTube, audio streams.
 
-const CACHE_NAME = '90sgaana-static-v1';
+const CACHE_NAME = '90sgaana-static-v2';
 
 // Static assets to pre-cache on install
 const PRECACHE_URLS = [
@@ -42,12 +42,10 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_URLS).catch((err) => {
-        // Don't fail install if some precache URLs are missing
         console.warn('[SW] Precache partial failure (non-fatal):', err);
       });
     })
   );
-  // Activate new SW immediately without waiting for old clients to close
   self.skipWaiting();
 });
 
@@ -62,7 +60,6 @@ self.addEventListener('activate', (event) => {
       )
     )
   );
-  // Take control of all open tabs immediately
   self.clients.claim();
 });
 
@@ -81,20 +78,18 @@ self.addEventListener('fetch', (event) => {
   const shouldNeverCache = NEVER_CACHE.some(
     (pattern) => request.url.includes(pattern)
   );
-  if (shouldNeverCache) return; // browser handles it natively
+  if (shouldNeverCache) return;
 
   // 4. For navigation requests (HTML pages) — network-first, fallback to cache
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Update cache with fresh HTML
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
         .catch(() => {
-          // Offline fallback — serve cached index.html
           return caches.match('/') || caches.match('/index.html');
         })
     );
@@ -106,9 +101,15 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;
-        // Not in cache — fetch and cache it
         return fetch(request).then((response) => {
-          // Only cache successful responses for same-origin assets
+          // If server returns text/html for a JS file (e.g. 404 fallback), do NOT cache
+          const contentType = response.headers.get('content-type') || '';
+          if (request.url.endsWith('.js') && contentType.includes('text/html')) {
+            return new Response('console.warn("Asset hash changed, updating SW...");', {
+              status: 404,
+              headers: { 'Content-Type': 'application/javascript' }
+            });
+          }
           if (response.ok && response.status === 200) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
@@ -119,7 +120,5 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-
-  // 6. Everything else (cross-origin) — network only, no caching
-  // This covers CDN fonts, analytics, etc.
 });
+
