@@ -34,7 +34,7 @@ if (allowedOrigins.length === 0) {
     'http://localhost:5177',
     'http://localhost:5001',
     "https://90sgaana.in",
-   "https://www.90sgaana.in",
+   "https://www.90sgaana.in"
   );
 }
 
