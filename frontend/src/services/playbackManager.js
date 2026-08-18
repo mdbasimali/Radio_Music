@@ -56,11 +56,14 @@ class PlaybackManager {
     // Instrument audio pause with stack trace
     const originalPause = this.audio.pause.bind(this.audio);
     this.audio.pause = (...args) => {
-      console.trace("[AUDIO PAUSE CALLED]", {
+      console.trace("[MAIN AUDIO PAUSE CALLED]", {
+        provider: this.providerType,
         src: this.audio.src,
         paused: this.audio.paused,
-        visibilityState: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
-        hidden: typeof document !== 'undefined' ? document.hidden : 'unknown'
+        readyState: this.audio.readyState,
+        networkState: this.audio.networkState,
+        visibility: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+        standalone: typeof window !== 'undefined' ? window.matchMedia("(display-mode: standalone)").matches : false
       });
       return originalPause(...args);
     };
@@ -68,11 +71,14 @@ class PlaybackManager {
     // Instrument audio play
     const originalPlay = this.audio.play.bind(this.audio);
     this.audio.play = (...args) => {
-      console.log("[AUDIO PLAY CALLED]", {
+      console.log("[MAIN AUDIO PLAY CALLED]", {
+        provider: this.providerType,
         src: this.audio.src,
         paused: this.audio.paused,
-        visibilityState: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
-        hidden: typeof document !== 'undefined' ? document.hidden : 'unknown'
+        readyState: this.audio.readyState,
+        networkState: this.audio.networkState,
+        visibility: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+        standalone: typeof window !== 'undefined' ? window.matchMedia("(display-mode: standalone)").matches : false
       });
       return originalPlay(...args);
     };
@@ -112,15 +118,16 @@ class PlaybackManager {
     ];
     debugEvents.forEach((evt) => {
       audio.addEventListener(evt, () => {
-        console.log("[DIRECT AUDIO]", {
+        console.log("[MAIN AUDIO]", {
           event: evt,
+          provider: this.providerType,
           src: audio.src,
           paused: audio.paused,
           readyState: audio.readyState,
           networkState: audio.networkState,
           currentTime: audio.currentTime,
-          visibilityState: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
-          hidden: typeof document !== 'undefined' ? document.hidden : 'unknown'
+          visibility: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+          standalone: typeof window !== 'undefined' ? window.matchMedia("(display-mode: standalone)").matches : false
         });
       });
     });
