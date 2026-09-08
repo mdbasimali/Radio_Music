@@ -2,7 +2,7 @@
 // Strategy: Cache-first for static assets, network-only for everything dynamic.
 // NEVER caches: API calls, Socket.IO, YouTube, audio streams.
 
-const CACHE_NAME = '90sgaana-static-v3';
+const CACHE_NAME = '90sgaana-static-v4';
 
 // Static assets to pre-cache on install
 const PRECACHE_URLS = [

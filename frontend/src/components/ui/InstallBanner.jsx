@@ -52,14 +52,16 @@ export default function InstallBanner({ show, isIOS, onInstall, onDismiss }) {
           >
             {/* Icon */}
             <img
-              src="/icon-192.png"
+              src="/logo.png?v=4"
               alt="90s Gaana app icon"
               style={{
                 width: 44,
                 height: 44,
                 borderRadius: 10,
+                objectFit: 'contain',
                 flexShrink: 0,
-                border: '1px solid rgba(212,140,54,0.2)',
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid rgba(212,140,54,0.3)',
               }}
             />
 
