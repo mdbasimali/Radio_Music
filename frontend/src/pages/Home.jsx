@@ -37,74 +37,25 @@ export default function Home() {
       </p>
       {/* Top Header */}
       <header className="w-full flex items-center justify-between px-6 py-4">
-        {/* Left: Brand Logo + Wordmark */}
+        {/* Left: Full Brand Logo + Listener status */}
         <motion.div
-          className="flex items-center gap-3"
+          className="flex items-center gap-3 sm:gap-4"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
+          <h1 className="sr-only">90s Gaana – Nostalgia On Air</h1>
           <img
-            src="/logo.png"
-            alt="90s Gaana - Nostalgia On Air"
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover shadow-md border border-[#c9a84c]/40 flex-shrink-0"
+            src="/logo.png?v=3"
+            alt="90s Gaana – Nostalgia On Air"
+            className="h-12 sm:h-14 md:h-16 w-auto object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)] transition-transform hover:scale-[1.03]"
           />
-          <div className="flex flex-col">
-            {/* ── 90S GAANA Wordmark ── */}
-            <div className="flex flex-col gap-0.5 select-none">
-            {/* Main title row with triple-line ornaments */}
-            <div className="flex items-center gap-2">
-              {/* Left ornament */}
-              <div className="flex flex-col gap-[2px] opacity-70">
-                <div style={{ width: 14, height: 1, background: 'linear-gradient(to right, transparent, #c9a84c)' }} />
-                <div style={{ width: 14, height: 1, background: 'linear-gradient(to right, transparent, #c9a84c)' }} />
-                <div style={{ width: 14, height: 1, background: 'linear-gradient(to right, transparent, #c9a84c)' }} />
-              </div>
-
-              <h1
-                className="font-sans font-extrabold uppercase whitespace-nowrap"
-                style={{
-                  fontSize: 'clamp(14px, 2.5vw, 20px)',
-                  letterSpacing: '0.18em',
-                  background: 'linear-gradient(180deg, #fbf2cc 0%, #c9a84c 45%, #a87c2a 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
-                }}
-              >
-                90S GAANA
-              </h1>
-
-              {/* Right ornament */}
-              <div className="flex flex-col gap-[2px] opacity-70">
-                <div style={{ width: 14, height: 1, background: 'linear-gradient(to left, transparent, #c9a84c)' }} />
-                <div style={{ width: 14, height: 1, background: 'linear-gradient(to left, transparent, #c9a84c)' }} />
-                <div style={{ width: 14, height: 1, background: 'linear-gradient(to left, transparent, #c9a84c)' }} />
-              </div>
-            </div>
-
-            {/* Subtitle */}
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <div style={{ flex: 1, height: '0.5px', background: 'linear-gradient(to right, transparent, #c9a84c66)' }} />
-              <span
-                className="uppercase font-body font-medium whitespace-nowrap"
-                style={{ fontSize: 'clamp(7px, 1.1vw, 9px)', letterSpacing: '0.35em', color: '#c9a84c', opacity: 0.85 }}
-              >
-                Nostalgia on Air
-              </span>
-              <span style={{ width: 3.5, height: 3.5, borderRadius: '50%', background: '#c9a84c', opacity: 0.9, flexShrink: 0 }} />
-              <div style={{ flex: 1, height: '0.5px', background: 'linear-gradient(to left, transparent, #c9a84c66)' }} />
-            </div>
-          </div>
-
-            {/* Listener count */}
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`w-2.5 h-2.5 rounded-full ${isConnected && listenerCount !== null ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-              <span className="text-[11px] font-mono tracking-wider uppercase text-paper-muted/80 font-medium">
-                {isConnected && listenerCount !== null ? `${listenerCount} listening` : 'Listening count unavailable'}
-              </span>
-            </div>
+          {/* Listener count badge */}
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-black/40 border border-white/5 backdrop-blur-sm select-none">
+            <span className={`w-2 h-2 rounded-full ${isConnected && listenerCount !== null ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+            <span className="text-[10px] sm:text-[11px] font-mono tracking-wider uppercase text-paper-muted/80 font-medium whitespace-nowrap">
+              {isConnected && listenerCount !== null ? `${listenerCount} listening` : 'Connecting...'}
+            </span>
           </div>
         </motion.div>
 
