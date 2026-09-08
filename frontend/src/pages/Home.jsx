@@ -36,7 +36,7 @@ export default function Home() {
         90s Gaana is an online retro radio playing classic 90s Hindi songs, 90s Bengali songs and 90s Bhojpuri songs. Rediscover nostalgic music from the golden era of Indian cinema.
       </p>
       {/* Top Header */}
-      <header className="w-full flex items-center justify-between px-6 py-4">
+      <header className="w-full flex flex-wrap md:flex-nowrap items-center justify-between px-6 py-4 relative">
         {/* Left: Full Brand Logo + Listener status */}
         <motion.div
           className="flex items-center gap-3 sm:gap-4"
@@ -55,6 +55,40 @@ export default function Home() {
             <span className={`w-2 h-2 rounded-full ${isConnected && listenerCount !== null ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
             <span className="text-[10px] sm:text-[11px] font-mono tracking-wider uppercase text-paper-muted/80 font-medium whitespace-nowrap">
               {isConnected && listenerCount !== null ? `${listenerCount} listening` : 'Connecting...'}
+            </span>
+          </div>
+        </motion.div>
+
+        {/* Center / Signature: Created by Ani (Liquid Glass) */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+          className="order-3 md:order-none w-full md:w-auto flex justify-center mt-2.5 md:mt-0 md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 pointer-events-none select-none"
+        >
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(20, 12, 15, 0.65) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(212, 140, 54, 0.2)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.08), inset 0 -1px 1px rgba(0, 0, 0, 0.4)',
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full"
+          >
+            <span className="text-[10px] font-sans font-light tracking-wider text-paper/55">
+              Created by
+            </span>
+            <span
+              style={{
+                background: 'linear-gradient(180deg, #fbf2cc 0%, #d48c36 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+              className="text-[10.5px] font-sans font-semibold tracking-wide"
+            >
+              Ani
             </span>
           </div>
         </motion.div>
