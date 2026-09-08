@@ -145,7 +145,7 @@ export function useRadioPlayer() {
   useEffect(() => {
     const backendHost = import.meta.env.VITE_API_URL
       ? import.meta.env.VITE_API_URL.replace('/api', '')
-      : 'http://localhost:5001';
+      : (import.meta.env.PROD ? 'https://radio-music-hrmt.onrender.com' : 'http://localhost:5001');
 
     const socket = io(backendHost, {
       query: { visitorId: localStorage.getItem('radio_visitorId') || 'anonymous' }

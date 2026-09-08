@@ -15,7 +15,7 @@ function getOrCreateVisitorId() {
 
 const SOCKET_URL = import.meta.env.VITE_API_URL 
   ? import.meta.env.VITE_API_URL.replace('/api', '') 
-  : 'http://127.0.0.1:5001';
+  : (import.meta.env.PROD ? 'https://radio-music-hrmt.onrender.com' : 'http://127.0.0.1:5001');
 
 export function useListenerCount() {
   const { isPlaying } = useRadio();

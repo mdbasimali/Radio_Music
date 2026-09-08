@@ -1,14 +1,15 @@
 // src/services/api.js
 import axios from 'axios';
 
-let BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5001/api';
+const PROD_API_URL = 'https://radio-music-hrmt.onrender.com/api';
+let BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? PROD_API_URL : 'http://127.0.0.1:5001/api');
 if (BASE_URL && !BASE_URL.endsWith('/api') && !BASE_URL.endsWith('/api/')) {
   BASE_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
 }
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 

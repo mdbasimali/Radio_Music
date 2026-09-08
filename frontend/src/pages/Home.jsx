@@ -37,15 +37,21 @@ export default function Home() {
       </p>
       {/* Top Header */}
       <header className="w-full flex items-center justify-between px-6 py-4">
-        {/* Left: Wordmark */}
+        {/* Left: Brand Logo + Wordmark */}
         <motion.div
-          className="flex flex-col"
+          className="flex items-center gap-3"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* ── 90S GAANA Wordmark ── */}
-          <div className="flex flex-col gap-0.5 mt-0.5 select-none">
+          <img
+            src="/logo.png"
+            alt="90s Gaana - Nostalgia On Air"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover shadow-md border border-[#c9a84c]/40 flex-shrink-0"
+          />
+          <div className="flex flex-col">
+            {/* ── 90S GAANA Wordmark ── */}
+            <div className="flex flex-col gap-0.5 select-none">
             {/* Main title row with triple-line ornaments */}
             <div className="flex items-center gap-2">
               {/* Left ornament */}
@@ -92,12 +98,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Listener count */}
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`w-2.5 h-2.5 rounded-full ${isConnected && listenerCount !== null ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className="text-[11px] font-mono tracking-wider uppercase text-paper-muted/80 font-medium">
-              {isConnected && listenerCount !== null ? `${listenerCount} listening` : 'Listening count unavailable'}
-            </span>
+            {/* Listener count */}
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`w-2.5 h-2.5 rounded-full ${isConnected && listenerCount !== null ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className="text-[11px] font-mono tracking-wider uppercase text-paper-muted/80 font-medium">
+                {isConnected && listenerCount !== null ? `${listenerCount} listening` : 'Listening count unavailable'}
+              </span>
+            </div>
           </div>
         </motion.div>
 

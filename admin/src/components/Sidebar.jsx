@@ -30,9 +30,11 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Brand header */}
       <div className="flex h-16 items-center justify-between px-5 border-b border-surface-800/40">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-            <Radio size={16} className="text-surface-950" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="90s Gaana"
+            className="w-8 h-8 rounded-lg object-cover shadow border border-brand-500/30"
+          />
           <div>
             <h1 className="text-sm font-bold tracking-wide text-surface-100">
               90s Radio
