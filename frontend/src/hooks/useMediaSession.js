@@ -130,8 +130,11 @@ export function useMediaSession({ currentTrack, currentStation, isPlaying, isLoa
     }
 
     try {
-      if (isLoading) {
-        navigator.mediaSession.playbackState = 'paused';
+      if (isLoading && isPlaying) {
+        // Still intending to play — report 'playing' so Android does NOT kill
+        // background audio. Reporting 'paused' here tells the OS the user stopped
+        // playback, which can cause the system to terminate background streaming.
+        navigator.mediaSession.playbackState = 'playing';
       } else {
         navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
       }

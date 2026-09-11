@@ -45,10 +45,15 @@ class PlaybackManager {
       onError: () => {}
     };
 
-    // HTML5 Audio element (singleton)
+    // HTML5 Audio element (singleton — one instance for the entire app session)
     this.audio = new Audio();
     this.audio.preload = 'auto';
-    this.audio.crossOrigin = 'anonymous';
+    // NOTE: crossOrigin = 'anonymous' is intentionally NOT set here.
+    // Setting it forces a CORS Origin header on every HTTP Range request to the audio stream.
+    // On Android Chrome, backgrounded PWA renderer processes are deprioritised; CORS-annotated
+    // Range requests stall or get cancelled during network reconnects, silencing playback.
+    // connectMusicSource() (Web Audio routing) is never called for the main music track, so
+    // the CORS attribute provides zero benefit and only causes background playback failures.
     this.audio.setAttribute('playsinline', '');
     this.audio.setAttribute('webkit-playsinline', '');
     this.audio.setAttribute('x-webkit-airplay', 'allow');
@@ -84,12 +89,7 @@ class PlaybackManager {
     };
 
     this._setupAudioListeners();
-
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
-        console.log("[AUDIO] visibility", document.visibilityState, "hidden:", document.hidden);
-      });
-    }
+    this._setupVisibilityHandler();
 
     // YouTube state
     this.ytPlayer = null;
@@ -171,14 +171,18 @@ class PlaybackManager {
         if (this._isChangingTrack && this.playbackIntent) {
           return; // Ignore transient pause during track swap
         }
-        // Only transition to pause state if user actually intended to pause.
-        // OS/system-induced pauses in background will keep intent/playing state active.
         if (!this.playbackIntent) {
+          // User explicitly paused — update state normally.
           this.isPlaying = false;
           this.callbacks.onCanPlay();
           this.callbacks.onStateChange?.({ isPlaying: false, isLoading: false });
         } else {
-          console.log('[AUDIO] System/OS paused the audio (playback intent remains active)');
+          // OS / Android system paused us while the user still intends to play
+          // (e.g. audio focus lost momentarily, network hiccup, screen lock).
+          // Do NOT flip isPlaying — the intent is preserved.
+          // Schedule a resume attempt so we recover when audio focus returns.
+          console.log('[AUDIO] System/OS paused audio — intent still active, scheduling resume');
+          this._scheduleResumeAttempt();
         }
       }
     });
@@ -239,6 +243,69 @@ class PlaybackManager {
       clearInterval(this.ytInterval);
       this.ytInterval = null;
     }
+  }
+
+  // ── Visibility / AudioContext resume handler ─────────────────
+
+  _setupVisibilityHandler() {
+    if (typeof document === 'undefined') return;
+
+    document.addEventListener('visibilitychange', () => {
+      const hidden = document.hidden;
+      console.log('[AUDIO] visibilitychange →', document.visibilityState, {
+        provider: this.providerType,
+        playbackIntent: this.playbackIntent,
+        paused: this.audio.paused,
+        src: this.audio.src,
+        currentTime: this.audio.currentTime,
+      });
+
+      if (!hidden && this.providerType === 'direct' && this.playbackIntent) {
+        // App returned to foreground with user's intent to play.
+        // Resume the AudioContext if it was suspended by Android while backgrounded.
+        try {
+          const audioEngine = window.__audioEngineCtx;
+          if (audioEngine && audioEngine.state === 'suspended') {
+            audioEngine.resume().then(() => {
+              console.log('[AUDIO] AudioContext resumed on visibility restore');
+            }).catch(() => {});
+          }
+        } catch (e) { /* ignore */ }
+
+        // If the audio element was paused by the OS (audio focus loss, screen lock, etc.)
+        // but our intent is still playing, resume it now.
+        if (this.audio.paused && this.audio.src) {
+          console.log('[AUDIO] Restoring playback after background — src:', this.audio.src, 'time:', this.audio.currentTime);
+          this.audio.play().catch((err) => {
+            console.warn('[AUDIO] Resume after visibility restore failed:', err);
+            // If play is blocked, the user will need to tap Play — don't crash
+          });
+        }
+      }
+    });
+  }
+
+  // ── OS-induced pause recovery ──────────────────────────────────
+
+  _scheduleResumeAttempt() {
+    // Clear any existing pending attempt
+    if (this._resumeTimer) {
+      clearTimeout(this._resumeTimer);
+      this._resumeTimer = null;
+    }
+    // Only attempt resume if we are not hidden — if hidden, the visibilitychange
+    // handler will handle it when the user returns to the app.
+    if (document.hidden) return;
+
+    this._resumeTimer = setTimeout(() => {
+      this._resumeTimer = null;
+      if (this.providerType === 'direct' && this.playbackIntent && this.audio.paused && this.audio.src) {
+        console.log('[AUDIO] Auto-resume after OS pause, time:', this.audio.currentTime);
+        this.audio.play().catch((err) => {
+          console.warn('[AUDIO] Auto-resume failed:', err);
+        });
+      }
+    }, 800); // short delay — gives audio focus system time to settle
   }
 
   // ── Stop the other provider ────────────────────────────────────

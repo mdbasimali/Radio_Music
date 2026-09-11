@@ -94,7 +94,7 @@ export default function Home() {
         </motion.div>
 
         {/* Right: NOSTALGIA + HIDE UI buttons */}
-        <div className="flex items-center gap-2">
+        <div className="w-full md:w-auto flex items-center justify-end gap-2 mt-2.5 md:mt-0 order-2 md:order-none">
           {/* NOSTALGIA button with popover */}
           <div className="relative">
             <motion.button

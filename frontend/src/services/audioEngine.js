@@ -25,6 +25,9 @@ const AMBIENCE_MAP = {
 export function initContext() {
   if (!_ctx) {
     _ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Expose on window so playbackManager's visibility handler can resume it
+    // when Android un-backgrounds the PWA (AudioContext auto-suspends in background).
+    window.__audioEngineCtx = _ctx;
     
     // Master Gain Node
     _masterGain = _ctx.createGain();
