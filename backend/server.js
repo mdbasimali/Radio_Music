@@ -87,8 +87,20 @@ app.use('/api/tracks', tracksRouter);
 app.use('/api/playlists', playlistsRouter);
 
 // Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: '90s Gaana backend',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.status(200).json({
+    status: 'ok',
+    service: '90s Gaana backend',
+    timestamp: new Date().toISOString()
+  });
 });
 
 
