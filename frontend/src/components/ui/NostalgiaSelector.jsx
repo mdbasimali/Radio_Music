@@ -5,14 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Sparkles } from 'lucide-react';
 import { useNostalgia } from '../../context/NostalgiaContext';
 
-export default function NostalgiaSelector({ open, onClose }) {
+export default function NostalgiaSelector({ open, onClose, triggerRef }) {
   const { activeBg, backgrounds, setBackground } = useNostalgia();
   const panelRef = useRef(null);
 
-  // Close on outside click
+  // Close on outside click — but NOT when clicking the trigger button itself.
+  // If we let onClose() fire on the trigger's mousedown/touchstart, it would
+  // set open=false BEFORE the button's onClick runs, causing onClick to toggle
+  // false → true and the panel never closes on a second click.
   useEffect(() => {
     if (!open) return;
     function handle(e) {
+      const clickedTrigger = triggerRef?.current && triggerRef.current.contains(e.target);
+      if (clickedTrigger) return; // let the button's own onClick handle the toggle
       if (panelRef.current && !panelRef.current.contains(e.target)) onClose();
     }
     document.addEventListener('mousedown', handle);
@@ -21,7 +26,7 @@ export default function NostalgiaSelector({ open, onClose }) {
       document.removeEventListener('mousedown', handle);
       document.removeEventListener('touchstart', handle);
     };
-  }, [open, onClose]);
+  }, [open, onClose, triggerRef]);
 
   return (
     <AnimatePresence>
